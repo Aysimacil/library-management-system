@@ -12,7 +12,7 @@ Django ve PostgreSQL kullanılarak geliştirilecek web tabanlı bir Kütüphane 
 
 - [1. Amaç ve kapsam](#1-amaç-ve-kapsam)
 - [2. Kullanıcı rolleri ve işlevsel gereksinimler](#2-kullanıcı-rolleri-ve-işlevsel-gereksinimler)
-- [3. İş kuralları ve karar bekleyen noktalar](#3-iş-kuralları-ve-karar-bekleyen-noktalar)
+- [3. İş kuralları ve uygulama kararları](#is-kurallari)
 - [4. Teknoloji yığını](#4-teknoloji-yığını)
 - [5. Mimari ve tasarım ilkeleri](#5-mimari-ve-tasarım-ilkeleri)
 - [6. Veritabanı tasarımı](#6-veritabanı-tasarımı)
@@ -43,11 +43,11 @@ Projenin amacı, temel kütüphane süreçlerini dijital ortamda yönetebilen, k
 3. **Kopya ve stok yönetimi:** Her kitabın fiziksel kopyalarının ve kullanılabilirlik durumunun takibi.
 4. **Ödünç alma ve iade:** Ödünç kaydı, son teslim tarihi, iade tarihi ve aktif ödünçlerin takibi.
 5. **Gecikme cezası:** Belirlenen kurallara göre cezanın hesaplanması ve ceza geçmişinin gösterilmesi.
-6. **LLM destekli öneriler:** Kitap özeti/analizi ve kullanıcı tercihleri ya da okuma geçmişine dayalı öneriler.
+6. **LLM destekli öneriler:** Katalog açıklamasına dayalı kısa özet/analiz ve mevcut kullanıcı isteği/tercihlerine göre öneriler. Okuma geçmişine dayalı gelişmiş kişiselleştirme sonraki aşamadır.
 
 ### Kapsam dışı veya ayrıca kararlaştırılacak konular
 
-Çevrim içi ödeme, barkod/RFID donanımı, e-kitap dağıtımı, çok şubeli kütüphane yönetimi, gerçek zamanlı bildirimler ve üretim ortamında ölçeklendirme ilk sürümün zorunlu kapsamı değildir. Ekip ve ders gereksinimleri doğrultusunda eklenmeleri ayrıca kararlaştırılmalıdır.
+Çevrim içi ödeme, kısmi ödeme, rezervasyon kuyruğu, kayıp/hasar ve tazminat süreçleri, okuma geçmişine dayalı gelişmiş kişiselleştirme, barkod/RFID donanımı, e-kitap dağıtımı, çok şubeli kütüphane yönetimi, gerçek zamanlı bildirimler ve üretim ortamında ölçeklendirme ilk sürümün zorunlu kapsamı değildir. Ekip ve ders gereksinimleri doğrultusunda eklenmeleri ayrıca kararlaştırılmalıdır.
 
 ---
 
@@ -57,8 +57,8 @@ Roller ve izinler uygulama geliştirilirken kesinleştirilecektir. Önerilen ba�
 
 | Rol | Temel yetkiler |
 |---|---|
-| **Üye** | Kataloğu görüntüleme ve arama, kendi ödünç kayıtlarını ve cezalarını görüntüleme, uygun kitap için ödünç talebinde bulunma/ödünç alma, LLM önerilerinden yararlanma |
-| **Kütüphaneci** | Katalog kayıtlarını ve kopyaları yönetme, ödünç/iade işlemlerini yönetme, gerekli kayıtları görüntüleme |
+| **Üye** | Kataloğu görüntüleme ve arama, kendi ödünç kayıtlarını ve cezalarını görüntüleme, uygun kitap için ödünç talebinde bulunma, koşullar sağlandığında uzatma isteme, LLM önerilerinden yararlanma |
+| **Kütüphaneci** | Katalog kayıtlarını ve kopyaları yönetme, fiziksel teslim/iade işlemlerini onaylama, uzatma kurallarını uygulama, kesinleşmiş cezalar için demo ödeme kaydı oluşturma, gerekli kayıtları görüntüleme |
 | **Yönetici** | Kullanıcı ve rol yönetimi ile uygulamanın yönetim işlevleri; gerektiğinde Django Admin üzerinden veri yönetimi |
 
 ### İşlevsel gereksinimler
@@ -77,32 +77,81 @@ Roller ve izinler uygulama geliştirilirken kesinleştirilecektir. Önerilen ba�
 
 ---
 
-## 3. İş kuralları ve karar bekleyen noktalar
+<a name="is-kurallari"></a>
 
-Aşağıdaki maddeler geliştirmeye başlamadan önce ekipçe karara bağlanmalı, README’deki bu bölüm ve ilgili raporlar buna göre güncellenmelidir.
+## 3. İş kuralları ve uygulama kararları
+
+**19 Ekim 2026 — İlk sürüm için önerilen karar seti.** Bu bölüm geliştirmede uygulanacak kuralları somutlaştırır; ekip incelemesine açıktır. Kuralların burada yazılması, ilgili özelliklerin uygulanıp test edildiği anlamına gelmez. Dersin yazılı gereksinimleriyle çelişen bir madde varsa geliştirmeden önce düzeltilmelidir.
 
 | Konu | Karar / uygulanacak yaklaşım |
 |---|---|
-| Ödünç süresi | **Ekip kararı bekleniyor.** Örneğin belirli sayıda gün olarak tanımlanabilir. |
-| Günlük gecikme ücreti | **Ekip kararı bekleniyor.** Para birimi ve hesaplama yöntemi belirlenmeli. |
-| Azami ceza | **Ekip kararı bekleniyor.** Üst sınır olup olmayacağı belirlenmeli. |
-| Hafta sonu/resmî tatil | **Ekip kararı bekleniyor.** Takvim günleri mi iş günleri mi sayılacağı belirlenmeli. |
-| Ödenmemiş ceza kısıtı | Hedeflenen kural: ödenmemiş cezası bulunan üyenin yeni ödünç almasının engellenmesi. Eşik veya istisna varsa tanımlanmalı. |
-| Aynı anda alınabilecek kitap sayısı | **Ekip kararı bekleniyor.** |
-| Yenileme/uzatma | İlk sürüme dahil edilip edilmeyeceği belirlenmeli. |
-| Kopya durumu | En azından ödünç alınabilir/ödünçte durumları tanımlanmalı; kayıp veya hasarlı durumları kapsam kararıyla eklenebilir. |
-| LLM sağlayıcısı/modeli | API ve model `.env` üzerinden yapılandırılmalı; sağlayıcı seçimi ekipçe yapılmalı. |
-| Kullanıcı verisi | LLM’ye yalnızca özellik için gerekli asgari veri gönderilmeli; gizli veya gereksiz kişisel bilgi gönderilmemeli. |
+| Ödünç süresi | Kütüphanecinin fiziksel teslimi onayladığı tarihten itibaren **14 takvim günü**. Son iade günü kapalıysa ilk açık güne ötelenir. |
+| Günlük gecikme ücreti | Her fiziksel kopyanın her ödünç işlemi için **günlük 5,00 TL**. Son iade gününde ceza yoktur; ertesi gün başlar. |
+| Azami ceza | Tek ödünç kaydı için **en fazla 100,00 TL gecikme cezası**. Bu sınır üyenin toplam hesabına uygulanmaz. |
+| Hafta sonu/resmî tatil | Ödünç süresi takvim günüyle sayılır. Son gün kapalıysa vade ötelenir; düzeltilmiş vadeden sonraki gecikme hesabına hafta sonları ve tatiller de dahildir. |
+| Ödenmemiş ceza kısıtı | Kesinleşmiş ödenmemiş borcu **0 TL'den fazla olan** veya **gecikmiş aktif ödüncü bulunan** üye yeni kitap alamaz ve uzatma yapamaz. İade, katalog ve kendi hesabına erişim engellenmez. |
+| Aynı anda alınabilecek kitap sayısı | Üye başına **en fazla 3 aktif fiziksel kopya**. İade edilen kopya bu sayıdan düşer. |
+| Yenileme/uzatma | İlk sürüme dahil: her ödünç için **en fazla 1 kez, mevcut vadeden itibaren 7 gün**. Ödünç gecikmemiş olmalı; üyede ödenmemiş borç veya başka gecikmiş ödünç bulunmamalıdır. |
+| Kopya durumu | İlk sürümde **AVAILABLE (ödünç verilebilir)** ve **ON_LOAN (ödünçte)**. Kayıp/hasar bildirimi, değerlendirmesi ve tazminat süreçleri sonraki sürüme bırakılır. |
+| LLM sağlayıcısı/modeli | Başlangıç tercihi **Google Gemini API / `gemini-3.5-flash-lite`**. `LLM_PROVIDER`, `LLM_MODEL` ve `LLM_API_KEY` sunucu ortam değişkenlerinden okunur; model değiştirilebilir tutulur. |
+| Kullanıcı verisi | LLM'ye yalnızca **kişisel bilgi içermeyen kitap isteği ve gerekli katalog bilgileri** gönderilir. Hesap bilgileri, parola, ham ödünç geçmişi ve borç/ödeme bilgileri gönderilmez. |
 
-### Ceza hesaplaması için önerilen tanım
+Sayısal değerler ders projesi için önerilmiştir; gerçek bir kurumun resmî tarifesi değildir. Süre, ücret, üst sınır, aktif ödünç limiti ve uzatma kuralları sunucuda tek yerde tanımlanmalıdır. Aktif ödüncün vadesi ve ücret koşulları kayıtta korunmalı; yapılandırma değişikliği eski işlemleri sessizce değiştirmemelidir.
 
-Ekip farklı bir kural seçmezse, hesaplama aşağıdaki genel mantıkla uygulanabilir:
+### 3.1 Ödünç, takvim ve uzatma
 
-`gecikme_günü = max(0, iade_tarihi veya bugün - son_teslim_tarihi)`
+- Ödünç kaydı bir **üyeyi bir fiziksel kopyaya** bağlar. Üç kitap tesliminde üç ayrı ödünç kaydı oluşturulur.
+- Süre, talep düğmesine basılınca değil, kütüphanecinin teslimi onaylamasıyla başlar. İlk sürümde ayrıca bir rezervasyon/bekleme kuyruğu yoktur.
+- Tarihler **Europe/Istanbul** saat dilimindeki sunucu tarihine göre değerlendirilir; kullanıcının cihaz saati kullanılmaz. İşlem zamanları UTC saklanabilir; son iade tarihi ayrı bir tarih alanı olmalıdır.
+- Ödünç başlangıcına 14 gün eklenir. Örneğin 19 Ekim 2026'da teslim edilen kitabın ham son iade tarihi 2 Kasım 2026'dır.
+- İlk takvim varsayımı: teslim/iade hizmeti pazartesi-cuma açık; cumartesi, pazar ve yapılandırılmış tatil günleri kapalıdır. Kurumun farklı hizmet takvimi varsa bu ayar değiştirilir. Fiziksel teslim için geçerli hizmet saatleri arayüzde gösterilmelidir.
+- Kapalı tarihler yıl bilgisiyle birlikte yapılandırmada tutulur; ilk sürümde dış tatil API'sine ihtiyaç yoktur. Vade, art arda kapalı günler varsa ilk açık güne kadar ötelenir.
+- Son iade tarihinin gün sonuna kadar gecikme cezası oluşmaz. Ertesi gün 00.00 itibarıyla bir günlük gecikme oluşur.
+- Uzatma, talep tarihinden değil **mevcut son iade tarihinden** hesaplanır. 7 gün eklenir ve yeni tarih kapalıysa yine ilk açık güne ötelenir. Erken uzatma kullanıcının kalan günlerini azaltmaz.
+- Son iade günü ilk uzatma yapılabilir. İkinci uzatma, gecikmiş ödünç için uzatma ve başka üyenin kaydına yetkisiz uzatma reddedilir.
+- Uzatma yeni bir ödünç oluşturmaz; aynı kayıtta uzatma sayısı, önceki/yeni vade ve işlem zamanı tutulur.
+- Kopya ve üye limiti kontrolleri ödünç kaydıyla aynı atomik işlemde yapılır. Eşzamanlı istekler aynı kopyayı iki üyeye verememeli veya bir üyenin 3 kopya sınırını aşamamalıdır.
 
-`ceza = gecikme_günü × günlük_ceza`
+### 3.2 Ceza hesaplaması
 
-Bu formül yalnızca başlangıç önerisidir. Gün sayımının başlangıç/bitiş noktası, günün hangi saatinde iade yapıldığı, azami ceza ve hafta sonu politikası netleştirilmeden nihai kabul edilmemelidir. Ceza tutarı `float` yerine para hesabına uygun `Decimal` türüyle hesaplanmalıdır.
+```text
+hesap_tarihi = iade edilmişse iade anının yerel tarihi, değilse bugünün yerel tarihi
+gecikme_gunu = max(0, hesap_tarihi - son_iade_tarihi)
+ceza = min(gecikme_gunu × Decimal("5.00"), Decimal("100.00"))
+```
+
+Tarih farkı takvim günü olarak alınır; geçen saatlerin 24'e bölünmesiyle hesaplanmaz. Son iade tarihi, kapalı gün düzenlemesi ve varsa uzatma sonrasındaki kayıtlı tarihtir. Para hesabında `float` yerine Python `Decimal` ve Django `DecimalField` kullanılır; sayısal sabitler metinden oluşturulur.
+
+| Gecikme | Tek ödüncün cezası |
+|---|---|
+| 0 gün | 0,00 TL |
+| 1 gün | 5,00 TL |
+| 3 gün | 15,00 TL |
+| 19 gün | 95,00 TL |
+| 20 gün | 100,00 TL |
+| 25 gün | 100,00 TL |
+
+- Aktif ödünçte ceza güncel tahmin olarak gösterilir; her gün yeni `Fine` kaydı oluşturulmaz.
+- İadede nihai tutar kesinleştirilir ve gerekiyorsa ilgili ödünç için tek `Fine` kaydı oluşturulur. İadeden sonra ceza büyümez.
+- Üç ayrı ödüncün her biri 100 TL cezaya ulaşmışsa toplam borç 300 TL olabilir.
+- 100 TL sınırına ulaşmak kitabı iade edilmiş saydırmaz. Gecikmiş aktif ödünç bulunduğu sürece yeni ödünç ve uzatma engeli devam eder.
+- Üye borçlu olsa da kitabını iade edebilir. İade kabulü ödeme şartına bağlanmaz.
+- İlk sürümde gerçek ödeme altyapısı ve kısmi ödeme yoktur. Kütüphaneci, kesinleşmiş cezanın tamamı için demo ödeme kaydı oluşturup borcu ödendi olarak işaretler; üye kendi borcunu silemez veya ödendi yapamaz.
+- Ödeme kaydı görevli ve işlem zamanını içermelidir. İade/ödeme isteğinin tekrarlanması ikinci bir ceza veya ödeme oluşturmamalıdır.
+
+### 3.3 LLM kapsamı, sınırları ve kullanıcı verisi
+
+- İlk sürüm, kişisel bilgi içermeyen mevcut isteğe/tercihlere göre kitap önerir; kısa özet/analiz yalnızca sağlanan katalog açıklamasına dayanır. Açıklama yetersizse kitap hakkında doğrulanmamış içerik üretmek yerine bu durum belirtilir.
+- Sunucu katalogdan ön aramayla en fazla 10 aday seçer; modele bu kitapların kimliği, başlığı, yazarı, kategorileri ve kısa açıklaması verilir. Model en fazla 3 katalog kitabı önerir.
+- Modelin döndürdüğü kitap kimlikleri sunucuda doğrulanır. Aday listesi dışında kalan öneriler gösterilmez; başlık ve güncel müsaitlik bilgisi veritabanından alınır.
+- Ceza hesabı, ödünç uygunluğu ve veri değişikliği LLM'ye bırakılmaz. Modele serbest SQL veya veri değiştiren araç yetkisi verilmez.
+- Okuma geçmişine dayalı gelişmiş kişiselleştirme sonraki aşamadır; ham ödünç geçmişini dış API'ye göndermek ilk sürüm kapsamında değildir.
+- Ad-soyad, e-posta, telefon, öğrenci numarası, hesap kimliği, parola, oturum bilgisi, API anahtarı ve ceza/ödeme kayıtları prompt'a eklenmez. Kullanıcıya arama alanına kişisel bilgi yazmaması söylenir. Açık e-posta/telefon kalıpları içeren istekler sağlayıcıya gönderilmeden reddedilir; bu filtre tam anonimleştirme garantisi değildir.
+- Demo yalnızca uydurma kullanıcılarla ve kişisel bilgi içermeyen isteklerle yürütülür. LLM işlevi 18 yaş ve üzerindeki üniversite öğrencilerine yönelik ders demosu kapsamında değerlendirilmiştir.
+- Başlangıç uygulama sınırları: üye başına dakikada 5, günde 20; uygulama genelinde günde 100 model çağrısı. Bunlar sağlayıcının kotası değil uygulamanın kendi limitleridir. İstek en fazla 500 karakterdir; bir istek için tek model çağrısı ve 10 saniye zaman aşımı uygulanır. Başarısız çağrılar otomatik döngüyle tekrarlanmaz.
+- Anahtar yoksa, kota dolarsa veya çağrı başarısız olursa normal arama devam eder; LLM özelliğinin geçici olarak kullanılamadığı açıkça belirtilir. Ham sorular/yanıtlar varsayılan olarak kalıcı günlüğe yazılmaz.
+
+**Sağlayıcı seçiminin dayanağı:** 19 Ekim 2026'da kontrol edilen [resmî model belgesi](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite), `gemini-3.5-flash-lite` modelini kararlı sürüm olarak listeler. [Fiyatlandırma belgesinde](https://ai.google.dev/gemini-api/docs/pricing) ücretsiz katman bulunur; hesap erişimi ve kota geliştirme sırasında ve teslim öncesinde doğrulanmalıdır. [Hizmet koşulları](https://ai.google.dev/gemini-api/terms) ücretsiz girdilerin ürün geliştirmede kullanılabileceğini belirtir. Bu nedenle kişisel bilgi gönderilmez; modelin Türkçe öneri kalitesi örnek sorgularla değerlendirilir.
 
 ---
 
@@ -114,7 +163,7 @@ Bu formül yalnızca başlangıç önerisidir. Gün sayımının başlangıç/bi
 | Web çatısı | Django |
 | Arayüz | Django Templates, HTML, CSS, Bootstrap 5 |
 | İlişkisel veritabanı | PostgreSQL |
-| LLM | Bir LLM sağlayıcısının API’si; sağlayıcı/model yapılandırılabilir tutulacak |
+| LLM | Google Gemini API; başlangıç modeli `gemini-3.5-flash-lite`, sağlayıcı/model sunucu ortam değişkenlerinden yapılandırılacak |
 | Test | Django `TestCase`; ihtiyaç duyulursa `pytest` |
 | Sürüm kontrolü | Git ve GitHub |
 | Dokümantasyon | README, ara/final rapor, ER diyagramı ve gerekli teknik belgeler |
@@ -179,17 +228,18 @@ Aşağıdaki varlıklar başlangıç tasarımıdır. Kesin alanlar ve ilişkiler
 | `Category` | Kategori adı ve açıklama |
 | `Book` ↔ `Author` | Bir kitabın birden fazla yazarı, bir yazarın birden fazla kitabı olabilir (**Many-to-Many**) |
 | `Book` ↔ `Category` | Bir kitap birden fazla kategoriye, kategori birden fazla kitaba bağlanabilir (**Many-to-Many**) |
-| `BookCopy` | Fiziksel kopya kimliği/etiketi, bağlı kitap ve kopyanın durumu |
-| `Loan` | Üye, kopya, ödünç tarihi, son teslim tarihi, iade tarihi ve durum |
-| `Fine` | İlgili ödünç/üye, tutar, oluşturulma tarihi ve ödeme durumu/tarihi (ödeme işlevi kapsama alınırsa) |
+| `BookCopy` | Benzersiz fiziksel kopya kimliği/etiketi, bağlı kitap; ilk sürümde `AVAILABLE` / `ON_LOAN` durumu |
+| `Loan` | Üye, kopya, ödünç zamanı, kayıtlı son iade tarihi, iade zamanı, durum, uzatma sayısı/zamanı ve ödünçte sabitlenen günlük ücret/ceza üst sınırı |
+| `Fine` | Tek bir ödünce bağlı kesinleşmiş gecikme tutarı; oluşturulma zamanı, ödenme durumu/zamanı ve ödemeyi kaydeden görevli |
 | LLM kullanım kaydı (isteğe bağlı) | Hata ayıklama/ölçüm için gerekli en az bilgi; hassas prompt ve kişisel veriler varsayılan olarak kaydedilmemeli |
 
 ### İlişki ve bütünlük notları
 
 - `Book`–`Author` ve `Book`–`Category` ilişkileri Django ORM üzerinden `ManyToManyField` ile modellenebilir. Django ara tabloları otomatik oluşturabilir; özel ilişki alanları gerekiyorsa `through` modeli kullanılabilir.
-- `BookCopy`, kitap başlığını fiziksel kopyalardan ayırır. Stok, yalnızca kitap kaydındaki serbest bir sayıdan değil, kopyaların tutarlı durumlarından türetilebilir veya kontrollü bir özet alanla yönetilebilir.
+- `BookCopy`, kitap başlığını fiziksel kopyalardan ayırır. İlk sürümde kullanılabilir stok, `AVAILABLE` kopyaların sayısından türetilir; bağımsız elle düzenlenen stok sayacı tutulmaz.
 - `Loan`, bir kullanıcı ile bir fiziksel kopyayı ilişkilendirmelidir. Aynı kopyanın aynı anda birden fazla aktif ödünç kaydına bağlanması engellenmelidir.
-- `Fine` ile `Loan` arasındaki ilişki ve bir ödünç için birden fazla ceza oluşup oluşamayacağı açıkça kararlaştırılmalıdır.
+- Bir `Loan` için en fazla bir kesinleşmiş `Fine` bulunur; ilişki `OneToOneField` ile korunabilir. Ceza 0 TL ise `Fine` oluşturmak gerekmez. Aktif ödüncün güncel tahmini cezası ayrı borç kayıtları üretmeden hesaplanır.
+- İadede ödünç kaydı, kopya durumu ve varsa kesinleşmiş ceza aynı atomik işlemde güncellenir. Üye limiti için eşzamanlı istekler de kontrol edilir.
 - Gerekli alanlarda `NOT NULL`, `UNIQUE`, `CHECK` ve foreign key kısıtları değerlendirilmelidir. Örneğin ISBN varsa benzersizliği, ceza tutarının negatif olmaması ve son teslim tarihinin ödünç tarihinden önce olmaması kontrol edilmelidir.
 - Para alanları `DecimalField` ile temsil edilmelidir.
 - Silme davranışları (`CASCADE`, `PROTECT` vb.) geçmiş ödünç/ceza kayıtlarını yanlışlıkla yok etmeyecek şekilde seçilmelidir.
@@ -365,10 +415,10 @@ DB_PASSWORD=replace-with-local-password
 DB_HOST=localhost
 DB_PORT=5432
 
-# LLM (kullanılacak sağlayıcıya göre adlar değişebilir)
-LLM_PROVIDER=replace-with-provider
+# LLM (yalnızca sunucuda; anahtar sunucudaki sağlayıcı SDK istemcisine aktarılır)
+LLM_PROVIDER=gemini
 LLM_API_KEY=
-LLM_MODEL=replace-with-model
+LLM_MODEL=gemini-3.5-flash-lite
 ```
 
 Güvenlik kuralları:
@@ -377,7 +427,7 @@ Güvenlik kuralları:
 - `.env.example` içinde gerçek anahtar, parola veya kişisel bilgi bulunmamalıdır.
 - `SECRET_KEY`, veritabanı parolası ve LLM API anahtarı kod içinde sabit yazılmamalıdır.
 - API anahtarı eksik/geçersizse LLM özelliği anlaşılır bir hata veya güvenli fallback göstermeli; tüm uygulamayı çökertmemelidir.
-- Kullanıcı girdileri LLM’ye gönderilmeden önce sınırlandırılmalı; kullanıcıya ait gereksiz hassas veriler prompt’a eklenmemelidir.
+- LLM istekleri Bölüm 3.3 sınırlarına uymalı; hesap bilgileri, ham ödünç geçmişi ve borç kayıtları prompt'a eklenmemelidir. API anahtarı tarayıcıya gönderilmemelidir.
 - LLM çıktısı HTML olarak doğrudan güvenilerek render edilmemeli; uygun şekilde metin olarak gösterilmeli veya güvenli biçimde temizlenmelidir.
 - Hata kayıtlarında API anahtarı, parola veya hassas kullanıcı verileri yer almamalıdır.
 
@@ -406,10 +456,15 @@ Testler yalnızca “sayfa açılıyor mu?” kontrolüyle sınırlı kalmamalı
 **Ceza motoru**
 - Zamanında iade için sıfır gecikme cezası.
 - Bir günlük ve birden çok günlük gecikme hesapları.
-- İade edilmemiş/aktif ödünç için “bugüne kadar” hesaplama yaklaşımı (ekip kararıyla).
-- Azami ceza ve hafta sonu kuralları kararlaştırılmışsa bunların test edilmesi.
+- Aktif ödünç için bugüne kadar tahmini cezanın hesaplanması; iadede tutarın sabitlenmesi.
+- 19 gün için 95 TL; 20 ve 25 gün için 100 TL üst sınırının doğrulanması.
+- Kapalı güne denk gelen vadenin ilk açık güne ötelenmesi; bundan sonraki gecikmenin takvim günü sayılması.
 - Para hesaplamasında `Decimal` kullanılması.
-- Ödenmemiş ceza kuralının yeni ödünç işlemine doğru uygulanması.
+- Ödenmemiş borcun veya gecikmiş aktif ödüncün yeni ödünç/uzatmayı engellemesi; iadeyi engellememesi.
+- Üyenin 3 aktif kopya sınırının eşzamanlı isteklerde de aşılmaması.
+- İlk uzatmanın mevcut vadeye 7 gün eklemesi; ikinci veya gecikmiş uzatmanın reddedilmesi.
+- Tekrarlı iade/ödeme isteklerinin ikinci bir ceza/ödeme oluşturmaması.
+- Ücret ayarı değiştiğinde eski ödüncün kaydedilmiş ücret koşullarının korunması.
 
 **Hesap ve yetkilendirme**
 - Giriş yapmamış kullanıcının korumalı sayfalara erişememesi.
@@ -420,7 +475,9 @@ Testler yalnızca “sayfa açılıyor mu?” kontrolüyle sınırlı kalmamalı
 - API yanıtının başarıyla işlenmesi.
 - API hatası, zaman aşımı, boş veya beklenmeyen yanıt durumlarının yönetilmesi.
 - Anahtar yokken uygulamanın temel işlevlerinin çalışmaya devam etmesi.
-- LLM’nin önerdiği kitapların katalog kayıtlarıyla eşleştirilmesi veya katalogda olmadığı açıkça belirtilmesi.
+- LLM önerilerinin verilen katalog adaylarıyla eşleştirilmesi; adaylar dışındaki kimliklerin gösterilmemesi.
+- Kişisel hesap/ödünç/ceza bilgilerinin model isteğine dahil edilmemesi; açık e-posta/telefon içeren isteğin gönderilmeden reddedilmesi.
+- Uygulama istek limitleri ve zaman aşımı sonrasında normal aramanın çalışması.
 - Testlerde gerçek API çağrısı yerine mock/fake yanıt kullanılması; testlerin ücretli dış servise bağımlı olmaması.
 
 ### Test komutları
@@ -511,12 +568,12 @@ Bu dağılım **Üye 1, Üye 2 ve Üye 3** olarak hazırlanmıştır. Kişi adla
 - GitHub deposunun temel çalışma düzenini, branch/PR akışını ve başlangıç dokümantasyonunu hazırlamak.
 - PostgreSQL bağlantısının proje ayarlarına entegre edilmesi için Üye 2 ve Üye 3 ile birlikte çalışmak; tek başına veritabanı tasarımını sahiplenmek yerine ortak yapının çalışmasını doğrulamak.
 - Ortak `base.html`, gezinme menüsü ve temel sayfa düzeninin başlangıç sürümünü hazırlamak.
-- LLM özelliği için sağlayıcı seçeneklerini, API maliyeti/gizlilik risklerini ve katalog verisiyle eşleştirme yaklaşımını araştırmak.
+- Bölüm 3.3'te önerilen Gemini API/model seçimini hesap erişimi, kota, Türkçe yanıt kalitesi ve gizlilik sınırları açısından doğrulamak; katalog verisiyle eşleştirme yaklaşımını tasarlamak.
 - LLM servisinin sınırlarını ve önerilen prompt/yanıt işleme akışını tasarlamak; henüz uygulanmadıysa raporda bunu “planlanan çalışma” olarak belirtmek.
 - Ara rapor için mimari, teknoloji seçimi, araçlar ve kendi katkılarını belgelemek; ilgili literatür/benzer çalışmalar araştırmasına katkı vermek.
 
 **Final raporuna kadar**
-- `recommendations` modülünü geliştirmek: kitap özeti/analizi ve kullanıcı tercihi/okuma geçmişi temelli öneri akışını uygulamak.
+- `recommendations` modülünü geliştirmek: katalog açıklamasına dayalı kısa özet/analiz ve mevcut kullanıcı isteği/tercihlerine dayalı öneri akışını Bölüm 3.3'e uygun uygulamak; okuma geçmişine dayalı gelişmiş kişiselleştirmeyi sonraki aşama olarak belgelemek.
 - LLM istemcisini servis katmanında tutmak; zaman aşımı, API hatası, eksik anahtar ve beklenmeyen yanıt durumlarını yönetmek.
 - Önerileri katalogdaki kitaplarla ilişkilendirmek; katalogda bulunmayan önerileri gerçek stok kaydı gibi göstermemek.
 - Ortak şablonların modüllerle tutarlı kullanılmasını ve sayfalar arasında gezinmenin bütünlüğünü sağlamak.
@@ -564,24 +621,24 @@ Bu dağılım **Üye 1, Üye 2 ve Üye 3** olarak hazırlanmıştır. Kişi adla
 **Ara rapora kadar**
 - Üye, kütüphaneci ve yönetici rollerinin ihtiyaçlarını ve izin sınırlarını tanımlamak.
 - `Loan` ve `Fine` modelleri için gerekli alanları, durumları ve ilişkileri tasarlamak.
-- Ödünç süresi, günlük gecikme ücreti, azami ceza, hafta sonu hesabı ve ödenmemiş ceza kısıtı gibi karar bekleyen iş kurallarını ekip gündemine getirmek.
+- Bölüm 3'teki 14 gün, 5 TL/gün, 100 TL üst sınır, 3 aktif kopya, tek 7 günlük uzatma, kapalı gün ve borç/gecikme kurallarını ekipçe gözden geçirmek; tarih örnekleri ve kabul ölçütlerini belgelemek.
 - Ödünç ve iade senaryolarını, hata durumlarını ve kabul ölçütlerini yazmak.
 - Üye 1 ve Üye 2 ile modellerin ve stok güncelleme akışının entegrasyonunu planlamak.
 - Ara rapor için kullanıcı rolleri, ödünç/iade ve ceza yaklaşımı ile ilgili literatür/benzer sistemler konusunda katkı sağlamak.
 
 **Final raporuna kadar**
 - `accounts` uygulamasında gerekli kimlik doğrulama, rol ve erişim kontrollerini geliştirmek; Django’nun yerleşik kimlik doğrulama sistemini uygun şekilde kullanmak.
-- `circulation` uygulamasında ödünç alma ve iade akışlarını uygulamak.
+- `circulation` uygulamasında ödünç alma, iade, tek uzatma ve görevlinin demo ödeme kaydı akışlarını uygulamak.
 - Ödünç sırasında kopya uygunluğunu doğrulamak; işlem başarısız olursa stok/ödünç durumunun tutarsız kalmasını önlemek.
 - Ceza hesaplama mantığını ayrı bir servis fonksiyonunda geliştirmek; kararlaştırılan kuralları merkezi olarak uygulamak.
-- Ödenmemiş ceza nedeniyle ödünç kısıtı kararlaştırıldığı şekilde uygulanacaksa bu kontrolü sunucu tarafında yapmak.
+- Ödenmemiş borç ve gecikmiş aktif ödünç nedeniyle yeni ödünç/uzatma kısıtlarını sunucu tarafında uygulamak; iadeye izin vermek.
 - Üyenin kendi ödünç geçmişi/cezalarını görmesini sağlamak; başka kullanıcılara ait kayıtları yetkisiz erişime kapatmak.
 - Kimlik doğrulama, yetkilendirme, ödünç/iade ve ceza kuralları için testler yazmak.
 - Final raporu için iş kurallarını, ekranları, test sonuçlarını ve bilinen sınırlılıkları belgelemek.
 
 **Beklenen çıktılar**
 - Hesap/rol ve izin kontrolleri.
-- Ödünç/iade akışları ve kayıtları.
+- Ödünç/iade/uzatma akışları ve demo ödeme kayıtları.
 - Ceza hesaplama servisi ve ceza geçmişi.
 - İlgili testler, ekran görüntüleri ve rapor katkısı.
 
