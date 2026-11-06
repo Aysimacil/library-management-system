@@ -338,33 +338,31 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-`requirements.txt` henüz oluşturulmadıysa önce ekipçe Django ve PostgreSQL bağlantısı için seçilen paketler belirlenip dosyaya eklenmelidir. PostgreSQL sürücüsü ve ortam değişkenlerini okumak için kullanılacak paket gerçek uygulama tercihine göre seçilmelidir.
+### 8.4 Yerel bağlantı
 
-### 8.4 PostgreSQL veritabanı oluşturma
+Varsayılan geliştirme profili SQLite ve konsol e-postasıyla çalışır. Python 3.12 ve
+`requirements.txt` ile bağımlılıkları kurduktan sonra doğrudan bölüm 8.6'ya geçebilirsiniz.
+PostgreSQL için önce veritabanı ve yetkili kullanıcı oluşturun, ardından
+`DB_ENGINE=postgresql`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` ve `DB_PORT` değerlerini ayarlayın.
 
-PostgreSQL üzerinde bir veritabanı ve bu veritabanına erişim yetkisi olan kullanıcı oluşturulmalıdır. Örnek SQL (kullanıcı/parola değerleri yerel ortama göre değiştirilmelidir):
+### 8.5 Ortam değişkenlerini yükleme
 
-```sql
-CREATE DATABASE library_db;
-```
-
-Veritabanı kullanıcısının yetkileri, yerel PostgreSQL kurulumuna uygun biçimde ayrıca ayarlanmalıdır. Geliştirme ortamındaki gerçek parola README’ye yazılmamalıdır.
-
-### 8.5 Ortam değişkenlerini ayarlama
-
-`.env.example` dosyası varsa kopyalayın:
+Ayarlar süreç ortamından okunur. Özel yerel ayarlar için macOS/Linux üzerinde
+`.env.example` dosyasını `.env` olarak kopyalayın, değerleri düzenleyin ve
+güvendiğiniz yerel dosyayı aynı terminalde yükleyin. Kabuk özel karakterleri
+içeren değerleri tek tırnakla yazın.
 
 ```bash
-# Linux/macOS
 cp .env.example .env
+# Değerleri düzenledikten sonra:
+set -a
+. ./.env
+set +a
 ```
 
-```powershell
-# Windows PowerShell
-Copy-Item .env.example .env
-```
-
-Ardından `.env` içindeki değerleri kendi yerel ortamınıza göre doldurun. Proje henüz ortam değişkeni yükleme paketini/ayarlarını içermiyorsa bu mekanizma uygulama iskeleti kurulurken eklenmelidir.
+PowerShell üzerinde örneğin `$env:DJANGO_ENV = "development"` ile değerleri
+oturuma tanımlayın veya IDE'nizin env-file desteğini kullanın. Django
+`.env` dosyasını kendiliğinden yüklemez. Gerçek dosya Git tarafından yok sayılır. Yerelde SECRET_KEY boşsa her süreçte geçici anahtar üretilir; oturumların yeniden başlatmadan sonra sürmesi için yerel bir anahtar tanımlayın.
 
 ### 8.6 Migration ve yönetici hesabı
 
@@ -400,26 +398,33 @@ Bu adreslerin açılması, henüz geliştirilmemiş bütün ekranların hazır o
 
 ## 9. Ortam değişkenleri ve gizli bilgiler
 
-Örnek `.env.example` dosyası aşağıdaki değişkenleri içerebilir. İsimler, Django ayarlarıyla birebir uyumlu olacak şekilde uygulanırken kesinleştirilmelidir.
+Üretimde servis ortamına `DJANGO_ENV=production`, `DEBUG=false`, tam alan adlarından
+oluşan virgülle ayrılmış `ALLOWED_HOSTS` ve yeni bir `SECRET_KEY` tanımlayın.
+Anahtarı güvenli bir terminalde `python -c "import secrets; print(secrets.token_urlsafe(64))"`
+ile üretip dağıtım platformunun gizli ayarlarında saklayın. Daha önce yayımlanmış
+bir anahtar kullanıldıysa değiştirin; mevcut imzalı oturumların yenilenmesi gerekebilir.
 
-```env
-# Django
-SECRET_KEY=replace-with-a-local-secret-key
-DEBUG=True
-ALLOWED_HOSTS=127.0.0.1,localhost
+Üretimde PostgreSQL varsayılandır. Veritabanı değerlerini bölüm 8.4'teki gibi verin.
+TCP bağlantısında varsayılan `DB_SSLMODE=require`; sertifika doğrulayan kurulumda
+`verify-full` ve güvenilir CA kullanın. E-posta için `EMAIL_MODE=smtp`, `SMTP_HOST`,
+`SMTP_PORT` (varsayılan 587) ve gerekiyorsa `SMTP_USER` ile `SMTP_PASSWORD`
+tanımlayın. SMTP bağlantısı STARTTLS kullanır.
 
-# PostgreSQL
-DB_NAME=library_db
-DB_USER=library_user
-DB_PASSWORD=replace-with-local-password
-DB_HOST=localhost
-DB_PORT=5432
+HTTPS yönlendirmesi ve güvenli oturum/CSRF çerezleri üretimde etkindir.
+Farklı bir güvenilir web origin'i gerekiyorsa tam HTTPS adresini
+`CSRF_TRUSTED_ORIGINS` listesine ekleyin. TLS güvenilir bir proxy'de sonlanıyorsa
+yalnız proxy istemci kaynaklı X-Forwarded-Proto başlığını silip kendi değeriyle
+değiştiriyor ve uygulamaya doğrudan erişimi engelliyorsa `TRUST_PROXY_HTTPS=true`
+kullanın. HSTS varsayılanı 300 saniyedir; TLS doğrulamasından sonra
+`HSTS_SECONDS` değerini kademeli artırın. Alt alanlar ve preload varsayılan olarak kapalıdır. Başlangıç profilinde Django
+bu tercihler için W005 ve W021 uyarılarını verir. Yalnız tüm alt alanlar
+kalıcı olarak HTTPS kullanıyorsa ve alan sahibi preload politikasını onayladıysa
+`HSTS_INCLUDE_SUBDOMAINS=true`, `HSTS_SECONDS=31536000` ve `HSTS_PRELOAD=true`
+ayarlanabilir.
 
-# LLM (yalnızca sunucuda; anahtar sunucudaki sağlayıcı SDK istemcisine aktarılır)
-LLM_PROVIDER=gemini
-LLM_API_KEY=
-LLM_MODEL=gemini-3.5-flash-lite
-```
+Üretim ortamıyla `python manage.py check --deploy --fail-level WARNING`
+çalıştırın. Ardından gerçek DB bağlantısı, HTTPS yönlendirmesi ve SMTP teslimini
+dağıtım ortamında ayrı doğrulayın. Yerel örneği üretime olduğu gibi taşımayın.
 
 Güvenlik kuralları:
 
