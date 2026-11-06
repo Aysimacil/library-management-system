@@ -21,3 +21,23 @@ class CatalogScreenTests(TestCase):
         self.assertContains(self.client.get(reverse("books:list")), link)
         self.assertContains(self.client.get(link), book.description)
         self.assertEqual(self.client.get(reverse("books:detail", args=[book.pk + 1])).status_code, 404)
+
+    def test_combined_search_preserves_filters_and_distinct_counts(self):
+        from .models import Author, Category
+
+        authors = [Author.objects.create(name=f"Deniz {n}") for n in (1, 2)]
+        cat = Category.objects.create(name="Roman")
+        for n in range(14):
+            book = Book.objects.create(title=f"Ada {n:02}", publication_year=2000 + n)
+            book.authors.set(authors)
+            book.categories.add(cat)
+            if n:
+                BookCopy.objects.create(book=book, inventory_code=str(n))
+        params = {"q": "Deniz", "category": cat.pk, "available": "1", "sort": "year"}
+        response = self.client.get(reverse("books:list"), params)
+        self.assertEqual(response.context["paginator"].count, 13)
+        self.assertEqual(response.context["books"][0].title, "Ada 13")
+        self.assertEqual(response.context["books"][0].available, 1)
+        self.assertContains(response, "q=Deniz&amp;category=")
+        second = self.client.get(reverse("books:list"), {**params, "page": 2})
+        self.assertEqual([b.title for b in second.context["books"]], ["Ada 01"])

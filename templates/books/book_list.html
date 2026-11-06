@@ -1,6 +1,13 @@
 {% extends "books/catalog_base.html" %}
 {% block content %}
 <h1>Kitap kataloğu</h1>
+<form method="get" role="search">
+<label>Kitap, yazar veya ISBN <input name="q" value="{{ request.GET.q }}" type="search"></label>
+<label>Kategori <select name="category"><option value="">Tümü</option>{% for category in categories %}<option value="{{ category.pk }}"{% if request.GET.category == category.pk|stringformat:"s" %} selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></label>
+<label>Sıralama <select name="sort"><option value="title">Kitap adı</option><option value="year"{% if request.GET.sort == "year" %} selected{% endif %}>En yeni yayın</option></select></label>
+<label><input type="checkbox" name="available" value="1"{% if request.GET.available == "1" %} checked{% endif %}> Yalnızca müsait kitaplar</label>
+<button>Ara</button><a href="{% url 'books:list' %}">Temizle</a>
+</form>
 <ul class="catalog">
 {% for book in books %}
 <li><h2><a href="{% url 'books:detail' book.pk %}">{{ book.title }}</a></h2>
