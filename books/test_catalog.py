@@ -41,3 +41,12 @@ class CatalogScreenTests(TestCase):
         self.assertContains(response, "q=Deniz&amp;category=")
         second = self.client.get(reverse("books:list"), {**params, "page": 2})
         self.assertEqual([b.title for b in second.context["books"]], ["Ada 01"])
+
+    def test_demo_can_be_run_twice(self):
+        from django.core.management import call_command
+        from io import StringIO
+
+        for _ in range(2):
+            call_command("seed_catalog", stdout=StringIO())
+        self.assertEqual(Book.objects.count(), 3)
+        self.assertEqual(BookCopy.objects.count(), 3)
