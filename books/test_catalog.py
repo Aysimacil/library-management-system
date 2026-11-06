@@ -50,3 +50,28 @@ class CatalogScreenTests(TestCase):
             call_command("seed_catalog", stdout=StringIO())
         self.assertEqual(Book.objects.count(), 3)
         self.assertEqual(BookCopy.objects.count(), 3)
+
+    def test_return_from_detail_keeps_filtered_page(self):
+        from html.parser import HTMLParser
+
+        class Links(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.urls = []
+
+            def handle_starttag(self, tag, attrs):
+                if tag == "a":
+                    self.urls.append(dict(attrs)["href"])
+
+        Book.objects.bulk_create([Book(title=f"Ada & Deniz {i:02}") for i in range(13)])
+        listing = self.client.get(reverse("books:list"), {"q": "Ada & Deniz", "page": 2})
+        links = Links()
+        links.feed(listing.content.decode())
+        detail = self.client.get(next(url for url in links.urls if url.startswith("/kitap/")))
+        self.assertContains(detail, "Ada &amp; Deniz 12")
+        links = Links()
+        links.feed(detail.content.decode())
+        restored = self.client.get(links.urls[0])
+        self.assertEqual(restored.wsgi_request.GET, listing.wsgi_request.GET)
+        self.assertEqual(restored.context["page_obj"].number, 2)
+        self.assertEqual([b.title for b in restored.context["books"]], ["Ada & Deniz 12"])
