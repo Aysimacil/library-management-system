@@ -60,7 +60,7 @@ if PRODUCTION and any(not origin.startswith("https://") or "*" in origin for ori
 SECURE_SSL_REDIRECT = PRODUCTION
 SESSION_COOKIE_SECURE = PRODUCTION
 CSRF_COOKIE_SECURE = PRODUCTION
-SECURE_HSTS_SECONDS = int(os.environ.get("HSTS_SECONDS", "300")) if PRODUCTION else 0
+SECURE_HSTS_SECONDS = int(os.environ.get("HSTS_SECONDS", "0")) if PRODUCTION else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = PRODUCTION and boolean("HSTS_INCLUDE_SUBDOMAINS", False)
 SECURE_HSTS_PRELOAD = PRODUCTION and boolean("HSTS_PRELOAD", False)
 if SECURE_HSTS_PRELOAD and (not SECURE_HSTS_INCLUDE_SUBDOMAINS or SECURE_HSTS_SECONDS < 31536000):
@@ -174,6 +174,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]    

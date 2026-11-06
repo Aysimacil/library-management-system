@@ -35,8 +35,7 @@ assert s.MAILERS['default']['BACKEND'].endswith('console.EmailBackend')
         env = self.production()
         result = self.run_django(["check", "--deploy"], **env)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("security.W005", result.stderr)
-        self.assertIn("security.W021", result.stderr)
+        self.assertIn("security.W004", result.stderr)
         result = self.run_django(["check", "--deploy", "--fail-level", "WARNING"], **env,
                                  HSTS_SECONDS="31536000", HSTS_INCLUDE_SUBDOMAINS="true", HSTS_PRELOAD="true")
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -44,7 +43,7 @@ assert s.MAILERS['default']['BACKEND'].endswith('console.EmailBackend')
     def test_production_security_and_connections(self):
         result = self.run_django(["shell", "-c", """
 from django.conf import settings as s
-assert not s.DEBUG and s.SECURE_SSL_REDIRECT and s.SECURE_HSTS_SECONDS == 300
+assert not s.DEBUG and s.SECURE_SSL_REDIRECT and s.SECURE_HSTS_SECONDS == 0
 assert s.CSRF_COOKIE_SECURE and s.SESSION_COOKIE_SECURE and s.SECURE_PROXY_SSL_HEADER is None
 assert s.DATABASES['default']['ENGINE'].endswith('postgresql')
 assert s.DATABASES['default']['OPTIONS']['sslmode'] == 'require'
