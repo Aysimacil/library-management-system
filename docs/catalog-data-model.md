@@ -29,10 +29,18 @@ Mevcut `books` uygulaması korunmuştur; README'deki `catalog` adı hedef yapı 
 
 ## Bu aşamanın kapsamı
 
-Veri modeli, ilk migration ve model testleri uygulanmıştır. Katalog ekranları,
-arama, ödünç/iade, ceza ve LLM henüz bu aşamanın parçası değildir.
+Veri modeli, ilk migration, model testleri ve Django Admin yönetimi uygulanmıştır.
+Üyelere yönelik katalog ekranları/arama, ödünç/iade, ceza ve LLM sonraki aşamalardır.
 `Model.save()` otomatik `full_clean()` çağırmaz; programatik veri girişinde
 model doğrulaması ayrıca çalıştırılmalıdır.
+
+## Yönetim paneli
+
+- `/admin/` altında yazar, kategori, kitap ve fiziksel kopyalar yönetilebilir. Erişim için `is_staff` ve ilgili Django model izinleri gerekir; yalnızca staff olmak yetmez.
+- Kitaplar başlık, ISBN ve yazar adına göre aranabilir; kategoriye göre filtrelenebilir. Toplam ve müsait kopya sayıları toplu sorguyla hesaplanır.
+- Kopyalar demirbaş kodu, kitap adı veya ISBN ile aranabilir; duruma göre filtrelenebilir.
+- Kopya durumu katalog panelinde değiştirilemez. Ödünçteki kopyanın kitabı/demirbaş kodu da değiştirilemez ve bu kopya silinemez. Kopyalarda toplu silme kapalıdır.
+- Bu panelin arama alanı, üyelere yönelik katalog ekranlarının yerini tutmaz. Üye ekranları sonraki aşamada eklenecektir.
 
 Kontrol komutları:
 
