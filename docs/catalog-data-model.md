@@ -86,3 +86,11 @@ komutuyla 30 test geçti. `seed_catalog` art arda iki kez çalıştırıldıktan
 sonra kitap ve fiziksel kopya sayıları üçer olarak doğrulandı.
 Bu kontrol geçici Django bağlantı ayarlarıyla yürütüldü. Projenin varsayılan
 yerel veritabanı SQLite'tır.
+
+### Mobil WebKit kontrolü — 6 Kasım 2026
+
+iPhone 13 tarayıcı profiliyle (390 × 664 görünüm alanı) WebKit üzerinde
+“Atlası” araması ve “Yalnızca müsait kitaplar” seçimi tek sonuç verdi.
+Dokunarak açılan detayda “1 / 1 kopya müsait” görüldü. Katalog bağlantısıyla
+dönüldüğünde sonuç adresi, arama ve müsaitlik seçimi korundu.
+Her iki sayfada yatay taşma kontrolü geçti. Bu test mobil emülasyonla yapıldı.
