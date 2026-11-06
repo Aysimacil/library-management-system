@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block content %}<h1>Kitap önerileri</h1>
+<form class="stack" method="post">{% csrf_token %}{{ form.as_p }}<button>Öneri al</button></form>
+{% if results != None %}<ul class="catalog">{% for book,summary in results %}<li>
+<h2><a href="{% url 'books:detail' book.pk %}">{{ book.title }}</a></h2>
+{% if summary %}<p>{{ summary }}</p>{% endif %}<p>{{ book.available_copy_count }} müsait kopya</p></li>
+{% empty %}<li>İsteğinizle eşleşen bir katalog önerisi bulunamadı.</li>{% endfor %}</ul>{% endif %}
+<a href="{% url 'books:list' %}">Katalogda ara</a>{% endblock %}
