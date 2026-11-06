@@ -1,0 +1,23 @@
+{% load static %}<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Kütüphane{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'css/catalog.css' %}">
+</head>
+<body>
+<a class="skip" href="#main">İçeriğe geç</a>
+<header class="mast"><div><a class="brand" href="{% url 'books:list' %}">Kütüphane</a>
+<nav aria-label="Ana menü">
+<a href="{% url 'books:list' %}">Katalog</a>
+{% if user.is_authenticated %}
+<a href="{% url 'accounts:profile' %}">Hesabım</a>
+{% if perms.circulation.issue_loan %}<a href="{% url 'circulation:desk' %}">Teslim masası</a>{% endif %}
+{% if user.is_superuser %}<a href="{% url 'accounts:dashboard' %}">Yönetim</a>{% endif %}
+{% if user.is_staff %}<a href="{% url 'admin:index' %}">Kayıt yönetimi</a>{% endif %}
+<a href="{% url 'recommendations:index' %}">Öneriler</a>
+<form class="inline" method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button>Çıkış</button></form>
+{% else %}<a href="{% url 'accounts:login' %}">Giriş</a><a href="{% url 'accounts:signup' %}">Üye ol</a>{% endif %}
+</nav></div></header>
+<main id="main">{% if messages %}<section aria-label="İşlem sonucu" aria-live="polite">{% for message in messages %}<p class="notice {{ message.tags }}">{{ message }}</p>{% endfor %}</section>{% endif %}
+{% block content %}{% endblock %}</main></body></html>

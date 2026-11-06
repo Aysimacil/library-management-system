@@ -8,5 +8,7 @@
 <dt>ISBN</dt><dd>{{ book.isbn|default:"Belirtilmemiş" }}</dd>
 <dt>Yayın yılı</dt><dd>{{ book.publication_year|default:"Belirtilmemiş" }}</dd>
 <dt>Müsaitlik</dt><dd>{{ book.available }} / {{ book.total }} kopya müsait</dd></dl>
+{% if book.available and can_request %}<form method="post" action="{% url 'circulation:request' book.pk %}">{% csrf_token %}<button>Ödünç talep et</button></form>{% endif %}
+{% for copy in available_copies %}<a href="{% url 'circulation:desk' %}?copy={{ copy.inventory_code|urlencode }}">{{ copy.inventory_code }} · Teslim başlat</a>{% endfor %}
 {% if book.description %}<h2>Açıklama</h2>{{ book.description|linebreaks }}{% endif %}
 {% endblock %}

@@ -45,3 +45,22 @@ class Fine(models.Model):
             models.CheckConstraint(condition=Q(amount__gt=0), name="fine_positive_amount"),
             models.CheckConstraint(condition=Q(paid_at__isnull=True, paid_by__isnull=True) | Q(paid_at__isnull=False, paid_by__isnull=False), name="fine_payment_complete"),
         ]
+
+
+class CheckoutRequest(models.Model):
+    """An interest in a title, without holding or reserving a copy."""
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Bekliyor"
+        FULFILLED = "FULFILLED", "Teslim edildi"
+        CANCELLED = "CANCELLED", "İptal edildi"
+
+    member = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    book = models.ForeignKey("books.Book", on_delete=models.PROTECT)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(default=timezone.now)
+    loan = models.OneToOneField(Loan, on_delete=models.PROTECT, null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["member", "book"], condition=Q(status="PENDING"), name="one_pending_request_per_title"),
+        ]

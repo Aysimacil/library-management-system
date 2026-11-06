@@ -3,13 +3,13 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
 from accounts.roles import MEMBER
 from books.models import BookCopy
-from .models import Fine, Loan
+from .models import CheckoutRequest, Fine, Loan
 
 
 def open_day(day):
@@ -45,6 +45,7 @@ def borrow_book(*, member_id, copy_id):
     if copy.status != BookCopy.Status.AVAILABLE or copy.loans.filter(returned_at__isnull=True).exists():
         raise ValidationError("Bu kopya zaten ödünçte.")
     loan = Loan.objects.create(member=member, copy=copy, issued_at=now, due_date=open_day(today + timedelta(days=14)))
+    CheckoutRequest.objects.filter(member=member, book_id=copy.book_id, status=CheckoutRequest.Status.PENDING).update(status=CheckoutRequest.Status.FULFILLED, loan=loan)
     copy.status = BookCopy.Status.ON_LOAN
     copy.save(update_fields=["status", "updated_at"])
     return loan
@@ -91,7 +92,6 @@ def renew_loan(*, loan_id):
 @transaction.atomic
 def pay_fine(*, fine_id, actor):
     if not actor.has_perm("circulation.pay_fine"):
-        from django.core.exceptions import PermissionDenied
         raise PermissionDenied
     fine = Fine.objects.select_for_update().get(pk=fine_id)
     if fine.paid_at is None:

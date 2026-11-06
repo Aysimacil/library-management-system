@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% block title %}Teslim masası · Kütüphane{% endblock %}
+{% block content %}<h1>Teslim masası</h1>
+{% if perms.circulation.issue_loan %}<h2>Kitap teslimi</h2>
+<form action="{% url 'circulation:issue' %}" method="post">{% csrf_token %}{{ form.as_p }}<button>Teslimi onayla</button></form>{% endif %}
+<h2>Bekleyen talepler</h2><ul>{% for entry in pending %}<li><a href="?member={{ entry.member.username|urlencode }}&amp;q={{ entry.book.title|urlencode }}">{{ entry.member.username }} · {{ entry.book.title }}</a></li>{% empty %}<li>Bekleyen talep yok.</li>{% endfor %}</ul>
+<h2>Ödünç kayıtları</h2><form method="get"><label>Üye, kitap veya demirbaş <input type="search" name="q" value="{{ request.GET.q }}"></label>
+<label><input type="checkbox" name="overdue" value="1" {% if request.GET.overdue %}checked{% endif %}> Yalnızca gecikenler</label><button>Ara</button></form>
+{% if request.GET.q %}<h3>Üyeler ve kopyalar</h3><ul>
+{% for member in members %}<li><a href="?member={{ member.username|urlencode }}">{{ member.username }} ile teslim başlat</a></li>{% endfor %}
+{% for copy in copies %}<li>{{ copy.book.title }} · {{ copy.get_status_display }} · <a href="?copy={{ copy.inventory_code|urlencode }}&amp;member={{ request.GET.member|urlencode }}">{{ copy.inventory_code }}</a></li>{% endfor %}</ul>{% endif %}
+<div class="table-scroll"><table><thead><tr><th>Kitap / Kopya</th><th>Üye</th><th>Son gün</th><th>İşlem</th></tr></thead>
+<tbody>{% for loan in loans %}<tr><td>{{ loan.copy.book.title }} · {{ loan.copy.inventory_code }}</td><td>{{ loan.member.username }}</td><td>{{ loan.due_date }} {% if loan.due_date < today %}(Gecikmiş){% endif %}</td><td>
+{% if perms.circulation.return_loan %}<form class="actions" method="post" action="{% url 'circulation:return' loan.pk %}">{% csrf_token %}<button>İade al</button></form>{% endif %}
+{% if perms.circulation.renew_loan and not loan.renewal_count %}<form class="actions" method="post" action="{% url 'circulation:renew' loan.pk %}">{% csrf_token %}<button>Uzat</button></form>{% endif %}
+</td></tr>{% empty %}<tr><td colspan="4">Aktif ödünç bulunamadı.</td></tr>{% endfor %}</tbody></table></div>
+{% if perms.circulation.view_fine %}<h2>Ödenmemiş cezalar</h2><ul>{% for fine in fines %}<li>{{ fine.loan.member.username }} · {{ fine.loan.copy.book.title }} · {{ fine.amount }} TL
+{% if perms.circulation.pay_fine %}<form class="actions" method="post" action="{% url 'circulation:pay' fine.pk %}">{% csrf_token %}<button>Demo ödeme kaydet</button></form>{% endif %}</li>
+{% empty %}<li>Ödenmemiş ceza bulunamadı.</li>{% endfor %}</ul>{% endif %}
+{% endblock %}

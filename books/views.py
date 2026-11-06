@@ -66,3 +66,11 @@ class BookDetail(DetailView):
 
     def get_queryset(self):
         return catalog_books()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context["can_request"] = user.is_authenticated and user.groups.filter(name="Üye").exists()
+        if user.has_perm("circulation.issue_loan"):
+            context["available_copies"] = self.object.copies.filter(status=BookCopy.Status.AVAILABLE)
+        return context

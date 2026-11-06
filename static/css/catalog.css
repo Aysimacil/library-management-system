@@ -16,3 +16,21 @@ button { background: #205342; color: white; border: 0; padding-inline: 1.25rem; 
 dt { font-weight: bold; }
 dd { margin: 0 0 .75rem; }
 @media (max-width: 36rem) { form { align-items: stretch; flex-direction: column; } }
+.mast { background: #193c32; color: #fff; }
+.mast > div { margin: auto; max-width: 68rem; padding: .9rem clamp(1rem,4vw,3rem); display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.mast nav { align-items: center; }
+.mast a { color: #fff; }
+.brand { font: bold 1.65rem Georgia,serif; text-decoration: none; }
+.inline { padding: 0; background: transparent; display: inline; }
+.skip { position: absolute; transform: translateY(-120%); padding: .5rem; background: white; }
+.skip:focus { transform: none; }
+.stack { display: grid; align-items: stretch; max-width: 32rem; }
+.stack p { margin: .2rem 0; }
+.stack input { width: 100%; }
+.errorlist,.error { color: #813525; }
+.notice { border-left: 4px solid #426950; background: white; padding: .75rem; }
+.metrics strong { display: block; font-size: 2.1rem; }
+.table-scroll { overflow: auto; }
+table { width: 100%; border-collapse: collapse; background: white; }
+td, th { padding: .6rem; text-align: left; border-bottom: 1px solid #d9dfda; }
+form.actions { background: none; padding: 0; display: inline-flex; }

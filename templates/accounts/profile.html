@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block title %}Hesabım · Kütüphane{% endblock %}
+{% block content %}<h1>Hesabım</h1><p>{{ user.username }} · Ödenmemiş ceza: <strong>{{ debt }} TL</strong></p>
+<h2>Bekleyen talepler</h2><ul>{% for entry in pending %}<li>{{ entry.book.title }} <form class="actions" method="post" action="{% url 'circulation:cancel' entry.pk %}">{% csrf_token %}<button>Talebi iptal et</button></form></li>{% empty %}<li>Bekleyen talebiniz yok.</li>{% endfor %}</ul>
+<h2>Aktif ödünçler</h2><ul class="catalog">{% for loan in active %}
+<li><h3>{{ loan.copy.book.title }}</h3><p>Demirbaş {{ loan.copy.inventory_code }}</p>
+<p>Son gün <strong>{{ loan.due_date }}</strong></p>{% if loan.due_date < today %}<p>Gecikmiş · Tahmini ceza {{ loan.estimate }} TL</p>{% endif %}
+{% if not loan.renewal_count and loan.due_date >= today %}<form method="post" action="{% url 'circulation:member-renew' loan.pk %}">{% csrf_token %}<button>Süreyi uzat</button></form>{% endif %}
+</li>{% empty %}<li>Aktif ödüncünüz yok.</li>{% endfor %}</ul>
+<h2>Geçmiş</h2><ul>{% for loan in history %}<li>{{ loan.copy.book.title }} · {{ loan.issued_at|date:"SHORT_DATE_FORMAT" }} – {{ loan.returned_at|date:"SHORT_DATE_FORMAT" }}</li>{% empty %}<li>Henüz iade kaydı yok.</li>{% endfor %}</ul>
+<h2>Cezalar</h2><ul>{% for fine in fines %}<li>{{ fine.loan.copy.book.title }} · {{ fine.amount }} TL · {% if fine.paid_at %}Ödendi{% else %}Ödenmedi{% endif %}</li>{% empty %}<li>Kesinleşmiş cezanız yok.</li>{% endfor %}</ul>{% endblock %}

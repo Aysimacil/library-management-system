@@ -71,7 +71,7 @@ class CatalogScreenTests(TestCase):
         self.assertContains(detail, "Ada &amp; Deniz 12")
         links = Links()
         links.feed(detail.content.decode())
-        restored = self.client.get(links.urls[0])
+        restored = self.client.get(next(url for url in links.urls if url.startswith("/?")))
         self.assertEqual(restored.wsgi_request.GET, listing.wsgi_request.GET)
         self.assertEqual(restored.context["page_obj"].number, 2)
         self.assertEqual([b.title for b in restored.context["books"]], ["Ada & Deniz 12"])

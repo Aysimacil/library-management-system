@@ -1,0 +1,2 @@
+{% extends "base.html" %}{% block content %}<h1>Yönetim</h1><ul class="catalog metrics">{% for name,value in metrics %}<li>{{ name }}<strong>{{ value }}</strong></li>{% endfor %}</ul>
+<a href="{% url 'admin:index' %}">Kayıt ve kullanıcı yönetimine geç</a>{% endblock %}
