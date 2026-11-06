@@ -24,3 +24,13 @@ Ekip incelemesine sunulan tasarım, tek Django projesi ve ortak ilişkisel verit
 3. Süre, uzatma ve ceza hesaplarında README'deki iş kuralları kullanılır. Katalog birleştirildikten sonra öneri servisi ayrı dalda geliştirilebilir. Son kabul testi tüm rolleri ve uçtan uca akışı kapsar.
 
 [Katalog veri modeli ve yapılan doğrulamalar](catalog-data-model.md) · [İş kuralları](../README.md#is-kurallari)
+
+### PR #3 için inceleme adımları
+
+| Kim | Deneme | Beklenen sonuç |
+|---|---|---|
+| 1. kişi | Demo verisiyle ana sayfada “Atlası” arat, müsaitlik filtresini seç, detayı aç ve katalog bağlantısıyla dön. | Aynı kitap, arama ve müsaitlik seçimi korunur. |
+| 2. kişi | Geçici geliştirme veritabanında migration'ları uygula, `seed_catalog` komutunu iki kez çalıştır ve `python manage.py test books` komutunu çalıştır. | Üç demo kitabı ve üç fiziksel kopya bulunur, katalog testleri geçer. |
+| 3. kişi | `books/models.py` ve ilk migration'da `BookCopy` kimliğini, kitap ilişkisini ve durum değerlerini kontrol et. | Ödünç modelinde referans alınacak anahtar `BookCopy.pk` olarak netleşir. |
+
+Üçüncü kişinin bu aşamadaki teslimi model ilişkisinin gözden geçirilmesidir. İki eşzamanlı teslim isteğinin PostgreSQL üzerinde denenmesi dolaşım servisiyle birlikte yapılacaktır.
