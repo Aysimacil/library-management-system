@@ -63,3 +63,19 @@ class AccountsTests(TestCase):
         self.client.force_login(admin)
         page = self.client.get(reverse("accounts:dashboard"))
         self.assertIn(("Fiziksel kopya", 0), page.context["metrics"])
+
+    def test_demo_is_repeatable_and_does_not_grant_access_to_existing_user(self):
+        from django.core.management.base import CommandError
+        from circulation.models import Loan
+
+        collision = get_user_model().objects.create_user("demo_gorevli")
+        with self.assertRaises(CommandError):
+            call_command("seed_library_demo")
+        self.assertFalse(get_user_model().objects.filter(username="demo_okur").exists())
+        self.assertFalse(collision.groups.exists())
+        collision.delete()
+        for _ in range(2):
+            call_command("seed_library_demo")
+        self.assertEqual(Loan.objects.count(), 2)
+        self.assertEqual(Loan.objects.filter(returned_at=None).count(), 1)
+        self.assertFalse(get_user_model().objects.get(username="demo_gorevli").has_usable_password())
