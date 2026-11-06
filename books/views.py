@@ -1,5 +1,5 @@
 from django.db.models import Count, Q
-from django.views.generic import ListView
+from django.views.generic import DetailView, ListView
 
 from .models import Book, BookCopy
 
@@ -15,6 +15,14 @@ class BookList(ListView):
     template_name = "books/book_list.html"
     paginate_by = 12
     context_object_name = "books"
+
+    def get_queryset(self):
+        return catalog_books().order_by("title", "pk")
+
+
+class BookDetail(DetailView):
+    template_name = "books/book_detail.html"
+    context_object_name = "book"
 
     def get_queryset(self):
         return catalog_books()

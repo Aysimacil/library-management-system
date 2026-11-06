@@ -3,7 +3,7 @@
 <h1>Kitap kataloğu</h1>
 <ul class="catalog">
 {% for book in books %}
-<li><h2>{{ book.title }}</h2>
+<li><h2><a href="{% url 'books:detail' book.pk %}">{{ book.title }}</a></h2>
 <p>{{ book.authors.all|join:", " }}{% if book.publication_year %} · {{ book.publication_year }}{% endif %}</p>
 <p>{{ book.categories.all|join:", " }}</p>
 <p>{{ book.available }} / {{ book.total }} kopya müsait</p></li>

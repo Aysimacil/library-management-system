@@ -14,3 +14,10 @@ class CatalogScreenTests(TestCase):
         response = self.client.get(url, {"page": 2})
         self.assertContains(response, last.title)
         self.assertContains(response, "1 / 1 kopya müsait")
+
+    def test_detail_link_and_missing_book(self):
+        book = Book.objects.create(title="Ada", description="Bir yolculuk")
+        link = reverse("books:detail", args=[book.pk])
+        self.assertContains(self.client.get(reverse("books:list")), link)
+        self.assertContains(self.client.get(link), book.description)
+        self.assertEqual(self.client.get(reverse("books:detail", args=[book.pk + 1])).status_code, 404)

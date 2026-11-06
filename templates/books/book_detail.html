@@ -1,0 +1,12 @@
+{% extends "books/catalog_base.html" %}
+{% block title %}{{ book.title }} · Katalog{% endblock %}
+{% block content %}
+<a href="{% url 'books:list' %}">← Kitap kataloğu</a>
+<h1>{{ book.title }}</h1>
+<p>{{ book.authors.all|join:", " }}</p>
+<dl><dt>Kategoriler</dt><dd>{{ book.categories.all|join:", "|default:"Belirtilmemiş" }}</dd>
+<dt>ISBN</dt><dd>{{ book.isbn|default:"Belirtilmemiş" }}</dd>
+<dt>Yayın yılı</dt><dd>{{ book.publication_year|default:"Belirtilmemiş" }}</dd>
+<dt>Müsaitlik</dt><dd>{{ book.available }} / {{ book.total }} kopya müsait</dd></dl>
+{% if book.description %}<h2>Açıklama</h2>{{ book.description|linebreaks }}{% endif %}
+{% endblock %}
