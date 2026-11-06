@@ -176,6 +176,8 @@ Tarih farkı takvim günü olarak alınır; geçen saatlerin 24'e bölünmesiyle
 
 ## 5. Mimari ve tasarım ilkeleri
 
+Modül sorumlulukları, fiziksel kopya ile ödünç kaydı arasındaki ilişki ve ekip inceleme sırası [uygulama mimarisi](docs/architecture.md) belgesinde açıklanmıştır.
+
 Uygulama, Django’nun sunucu tarafında HTML üreten yapısını kullanacaktır.
 
 ```text
