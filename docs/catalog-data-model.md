@@ -25,7 +25,7 @@ Mevcut `books` uygulaması korunmuştur; README'deki `catalog` adı hedef yapı 
 - Üçüncü ekip üyesinin `Loan` modeli kitap başlığı yerine `books.BookCopy` modeline bağlanmalıdır. Geçmişi korumak için bu ilişkide `on_delete=PROTECT` kullanılmalıdır.
 - Ödünç/iade servisi `BookCopy.status` alanını ödünç kaydıyla aynı atomik işlemde güncellemelidir. Alanın katalog formlarında kapalı olması tek başına eşzamanlılık güvencesi sağlamaz; kilitleme ve aktif ödünç benzersizliği dolaşım aşamasında uygulanacaktır.
 - Kullanıcı modeli veya rol yapısı bu paket tarafından değiştirilmez. Yönetim paneli Django'nun mevcut model izinlerini kullanır.
-- Birinci ekip üyesi PostgreSQL bağlantısını ve ortak ortam ayarlarını tamamladığında migration'lar PostgreSQL üzerinde de doğrulanmalıdır.
+- Ortak PostgreSQL bağlantısı hazır olduğunda aynı kontroller ekip ortamında tekrar çalıştırılabilir.
 
 ## Bu aşamanın kapsamı
 
@@ -77,3 +77,12 @@ genişliklerinde katalog kontrol edildi. Her iki genişlikte üç kitap listelen
 “Atlası” araması tek sonuç verdi. Detay ekranında “1 / 1 kopya müsait” görüldü
 ve katalog bağlantısıyla listeye dönüldü. Liste ve detay ekranlarında yatay
 taşma ölçülmedi. Dar ekran kontrolü masaüstü tarayıcısında gerçekleştirildi.
+
+### PostgreSQL kontrolü — 6 Kasım 2026
+
+Geçici bir PostgreSQL 18.6 sunucusunda, psycopg 3.3.8 ve Django 6.1.2 ile
+temiz veritabanına tüm migration'lar uygulandı. `manage.py test books`
+komutuyla 30 test geçti. `seed_catalog` art arda iki kez çalıştırıldıktan
+sonra kitap ve fiziksel kopya sayıları üçer olarak doğrulandı.
+Bu kontrol geçici Django bağlantı ayarlarıyla yürütüldü. Projenin varsayılan
+yerel veritabanı SQLite'tır.
