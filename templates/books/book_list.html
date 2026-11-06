@@ -1,0 +1,17 @@
+{% extends "books/catalog_base.html" %}
+{% block content %}
+<h1>Kitap kataloğu</h1>
+<ul class="catalog">
+{% for book in books %}
+<li><h2>{{ book.title }}</h2>
+<p>{{ book.authors.all|join:", " }}{% if book.publication_year %} · {{ book.publication_year }}{% endif %}</p>
+<p>{{ book.categories.all|join:", " }}</p>
+<p>{{ book.available }} / {{ book.total }} kopya müsait</p></li>
+{% empty %}<li>Katalogda gösterilecek kitap bulunamadı.</li>{% endfor %}
+</ul>
+{% if is_paginated %}<nav aria-label="Sayfalar">
+{% if page_obj.has_previous %}<a href="{% querystring page=page_obj.previous_page_number %}">Önceki</a>{% endif %}
+{{ page_obj.number }} / {{ paginator.num_pages }}
+{% if page_obj.has_next %}<a href="{% querystring page=page_obj.next_page_number %}">Sonraki</a>{% endif %}
+</nav>{% endif %}
+{% endblock %}
