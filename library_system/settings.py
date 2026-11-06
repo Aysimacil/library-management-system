@@ -10,22 +10,65 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
+import secrets
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
+def boolean(name, default):
+    value = os.environ.get(name, str(default)).strip().lower()
+    if value not in {"true", "false", "1", "0"}:
+        raise ImproperlyConfigured(f"{name} must be true or false.")
+    return value in {"true", "1"}
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-_zs*c%!jbcnt)ri6_vyb#_unf8v!=(2kh+oe%b09kiqu=d=4ku'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+def required(name):
+    value = os.environ.get(name)
+    if not value or not value.strip():
+        raise ImproperlyConfigured(f"{name} is required.")
+    return value
 
-ALLOWED_HOSTS = []
+
+def items(name, default=""):
+    return [item.strip() for item in os.environ.get(name, default).split(",") if item.strip()]
+
+
+ENVIRONMENT = os.environ.get("DJANGO_ENV", "development")
+if ENVIRONMENT not in {"development", "production"}:
+    raise ImproperlyConfigured("DJANGO_ENV must be development or production.")
+PRODUCTION = ENVIRONMENT == "production"
+
+SECRET_KEY = required("SECRET_KEY") if PRODUCTION else (
+    os.environ.get("SECRET_KEY") or secrets.token_urlsafe(64)
+)
+if PRODUCTION and (len(SECRET_KEY) < 50 or len(set(SECRET_KEY)) < 5 or SECRET_KEY.startswith("django-insecure-")):
+    raise ImproperlyConfigured("Generate a new random SECRET_KEY for production.")
+
+DEBUG = boolean("DEBUG", not PRODUCTION)
+ALLOWED_HOSTS = items("ALLOWED_HOSTS", "" if PRODUCTION else "localhost,127.0.0.1,[::1]")
+if PRODUCTION and (DEBUG or not ALLOWED_HOSTS or any("*" in host for host in ALLOWED_HOSTS)):
+    raise ImproperlyConfigured("Production requires DEBUG=false and explicit ALLOWED_HOSTS.")
+
+CSRF_TRUSTED_ORIGINS = items("CSRF_TRUSTED_ORIGINS")
+if PRODUCTION and any(not origin.startswith("https://") or "*" in origin for origin in CSRF_TRUSTED_ORIGINS):
+    raise ImproperlyConfigured("Use explicit HTTPS origins for CSRF_TRUSTED_ORIGINS.")
+SECURE_SSL_REDIRECT = PRODUCTION
+SESSION_COOKIE_SECURE = PRODUCTION
+CSRF_COOKIE_SECURE = PRODUCTION
+SECURE_HSTS_SECONDS = int(os.environ.get("HSTS_SECONDS", "300")) if PRODUCTION else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = PRODUCTION and boolean("HSTS_INCLUDE_SUBDOMAINS", False)
+SECURE_HSTS_PRELOAD = PRODUCTION and boolean("HSTS_PRELOAD", False)
+if SECURE_HSTS_PRELOAD and (not SECURE_HSTS_INCLUDE_SUBDOMAINS or SECURE_HSTS_SECONDS < 31536000):
+    raise ImproperlyConfigured("HSTS preload requires all subdomains and HSTS_SECONDS >= 31536000.")
+if SECURE_HSTS_SECONDS < 0:
+    raise ImproperlyConfigured("HSTS_SECONDS cannot be negative.")
+if PRODUCTION and boolean("TRUST_PROXY_HTTPS", False):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # Application definition
@@ -73,12 +116,24 @@ WSGI_APPLICATION = 'library_system.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+DB_ENGINE = os.environ.get("DB_ENGINE", "postgresql" if PRODUCTION else "sqlite")
+if DB_ENGINE == "sqlite":
+    DATABASES = {"default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": os.environ.get("DB_NAME") or BASE_DIR / "db.sqlite3",
+    }}
+elif DB_ENGINE == "postgresql":
+    DATABASES = {"default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": required("DB_NAME"),
+        "USER": required("DB_USER"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
+        "OPTIONS": {"sslmode": os.environ.get("DB_SSLMODE", "require" if PRODUCTION else "prefer")},
+    }}
+else:
+    raise ImproperlyConfigured("DB_ENGINE must be sqlite or postgresql.")
 
 
 # Password validation
@@ -124,8 +179,20 @@ STATICFILES_DIRS = [
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+EMAIL_MODE = os.environ.get("EMAIL_MODE", "smtp" if PRODUCTION else "console")
+if EMAIL_MODE == "console" and not PRODUCTION:
+    MAILERS = {"default": {"BACKEND": "django.core.mail.backends.console.EmailBackend"}}
+elif EMAIL_MODE == "smtp":
+    MAILERS = {"default": {
+        "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+        "OPTIONS": {
+            "host": required("SMTP_HOST"),
+            "port": int(os.environ.get("SMTP_PORT", "587")),
+            "username": os.environ.get("SMTP_USER", ""),
+            "password": os.environ.get("SMTP_PASSWORD", ""),
+            "use_tls": True,
+            "timeout": 10,
+        },
+    }}
+else:
+    raise ImproperlyConfigured("Use smtp in production or console for development.")
