@@ -1,4 +1,4 @@
-from django.db.models import Count, F, Q, Value
+from django.db.models import Count, Exists, F, OuterRef, Q, Value
 from django.db.models.functions import Lower, Replace
 from django.views.generic import DetailView, ListView
 
@@ -34,6 +34,7 @@ class BookList(ListView):
         term = params.get("q", "").strip()
         if term:
             folded = term.translate(str.maketrans(TURKISH_CAPITALS)).lower()
+            matching_codes = BookCopy.objects.filter(book_id=OuterRef('pk'), inventory_code__icontains=term)
             books = books.alias(
                 search_title=searchable_text("title"),
                 search_author=searchable_text("authors__name"),
@@ -41,6 +42,7 @@ class BookList(ListView):
                 Q(search_title__contains=folded)
                 | Q(search_author__contains=folded)
                 | Q(isbn__icontains=term)
+                | Exists(matching_codes)
             )
         category = params.get("category", "")
         if category:

@@ -81,6 +81,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'books',
+    'accounts',
+    'circulation',
+    'recommendations',
 ]
 
 MIDDLEWARE = [
@@ -158,9 +161,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'tr'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Istanbul'
 
 USE_I18N = True
 
@@ -196,3 +199,11 @@ elif EMAIL_MODE == "smtp":
     }}
 else:
     raise ImproperlyConfigured("Use smtp in production or console for development.")
+
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "accounts:profile"
+LOGOUT_REDIRECT_URL = "books:list"
+LIBRARY_CLOSED_DATES = items("LIBRARY_CLOSED_DATES")
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "gemini")
+LLM_MODEL = os.environ.get("LLM_MODEL", "gemini-3.5-flash-lite")
+LLM_API_KEY = os.environ.get("LLM_API_KEY", "")

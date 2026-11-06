@@ -60,10 +60,28 @@ class BookCopyAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)
-        if obj and obj.status == BookCopy.Status.ON_LOAN:
+        if obj and (obj.status == BookCopy.Status.ON_LOAN or obj.loans.exists()):
             return [*fields, "book", "inventory_code"]
         return fields
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        # Django wraps its change/delete POST in an atomic block. Lock before
+        # resolving editable fields so an issue cannot interleave validation.
+        match = request.resolver_match
+        if request.method == "POST" and match and match.url_name in {
+            "books_bookcopy_change", "books_bookcopy_delete",
+        }:
+            return qs.select_for_update()
+        return qs
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            return super().save_model(request, obj, form, change)
+        fields = set(form.changed_data) & {"book", "inventory_code", "shelf_location"}
+        if fields:
+            obj.save(update_fields=fields | {"updated_at"})
+
     def has_delete_permission(self, request, obj=None):
         allowed = super().has_delete_permission(request, obj)
-        return allowed and (obj is None or obj.status == BookCopy.Status.AVAILABLE)
+        return allowed and (obj is None or obj.status == BookCopy.Status.AVAILABLE and not obj.loans.exists())
