@@ -30,7 +30,7 @@ Mevcut `books` uygulaması korunmuştur; README'deki `catalog` adı hedef yapı 
 ## Bu aşamanın kapsamı
 
 Veri modeli, ilk migration, model testleri ve Django Admin yönetimi uygulanmıştır.
-Üyelere yönelik katalog ekranları/arama, ödünç/iade, ceza ve LLM sonraki aşamalardır.
+Katalog listesi, detay, arama ve müsaitlik filtreleri uygulanmıştır. Ödünç/iade, ceza ve LLM sonraki aşamalardır.
 `Model.save()` otomatik `full_clean()` çağırmaz; programatik veri girişinde
 model doğrulaması ayrıca çalıştırılmalıdır.
 
@@ -40,7 +40,7 @@ model doğrulaması ayrıca çalıştırılmalıdır.
 - Kitaplar başlık, ISBN ve yazar adına göre aranabilir; kategoriye göre filtrelenebilir. Toplam ve müsait kopya sayıları toplu sorguyla hesaplanır.
 - Kopyalar demirbaş kodu, kitap adı veya ISBN ile aranabilir; duruma göre filtrelenebilir.
 - Kopya durumu katalog panelinde değiştirilemez. Ödünçteki kopyanın kitabı/demirbaş kodu da değiştirilemez ve bu kopya silinemez. Kopyalarda toplu silme kapalıdır.
-- Bu panelin arama alanı, üyelere yönelik katalog ekranlarının yerini tutmaz. Üye ekranları sonraki aşamada eklenecektir.
+- Bu panelin arama alanı, üyelere yönelik katalog ekranlarının yerini tutmaz. Okuyucular ana sayfadaki salt okunur kataloğu kullanabilir.
 
 Kontrol komutları:
 
@@ -49,3 +49,23 @@ python manage.py check
 python manage.py makemigrations --check --dry-run
 python manage.py test books
 ```
+
+## İlişkiler
+
+```mermaid
+erDiagram
+    Book }o--o{ Author : yazarlar
+    Book }o--o{ Category : kategoriler
+    Book ||--o{ BookCopy : kopyalar
+```
+
+## Kataloğu deneme
+
+Yerel geliştirme veritabanında `python manage.py migrate` ve ardından
+`python manage.py seed_catalog` çalıştırın. Sunucuyu `python manage.py runserver`
+ile başlatın. Ana sayfada üç örnek kitabı görebilir, yazar veya kategoriyle
+arayabilir ve başlığa tıklayarak ayrıntılara geçebilirsiniz. Aynı demo komutunu
+yeniden çalıştırdığınızda mevcut demirbaş kodları korunur.
+
+Katalog ve kitap detayları giriş gerektirmeyen salt okunur sayfalardır.
+Dolaşım uygulaması fiziksel kopyayı kendi birincil anahtarıyla referans almalıdır.

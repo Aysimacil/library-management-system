@@ -6,7 +6,7 @@ Django ve PostgreSQL kullanılarak geliştirilecek web tabanlı bir Kütüphane 
 > **Bölüm:** Bilgisayar Mühendisliği, Çukurova Üniversitesi  
 > **Proje durumu:** Geliştirme aşamasında. Bu README’deki özellikler hedeflenen kapsamı anlatır; tamamlandığı doğrulanmamış işlevler tamamlanmış kabul edilmemelidir.
 
-**Katalog uygulama notu:** Kitap, yazar, kategori ve fiziksel kopya modelleri ile Django Admin yönetimi mevcut `books` uygulamasında uygulanmıştır. Üyelere yönelik katalog ekranları ve arama sonraki aşamadadır. Uygulanan veri modeli ve ekipler arası bağlantılar için [katalog veri modeli](docs/catalog-data-model.md) belgesine bakın. Aşağıdaki mimari ve dizin yapısı hedef tasarımı göstermeye devam eder.
+**Katalog uygulama notu:** Kitap, yazar, kategori ve fiziksel kopya modelleri ile Django Admin yönetimi mevcut `books` uygulamasında uygulanmıştır. Katalog listesi, arama ve filtreleme ana sayfada, kitap ayrıntıları ise listeden erişilen detay sayfasındadır. Uygulanan veri modeli ve ekipler arası bağlantılar için [katalog veri modeli](docs/catalog-data-model.md) belgesine bakın. Aşağıdaki mimari ve dizin yapısı hedef tasarımı göstermeye devam eder.
 
 ---
 
