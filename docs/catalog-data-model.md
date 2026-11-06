@@ -69,3 +69,11 @@ yeniden çalıştırdığınızda mevcut demirbaş kodları korunur.
 
 Katalog ve kitap detayları giriş gerektirmeyen salt okunur sayfalardır.
 Dolaşım uygulaması fiziksel kopyayı kendi birincil anahtarıyla referans almalıdır.
+
+### Tarayıcı kontrolü — 6 Kasım 2026
+
+SQLite üzerinde migration ve demo kurulumu sonrasında Opera'da 320 ve 1280 piksel
+genişliklerinde katalog kontrol edildi. Her iki genişlikte üç kitap listelendi.
+“Atlası” araması tek sonuç verdi. Detay ekranında “1 / 1 kopya müsait” görüldü
+ve katalog bağlantısıyla listeye dönüldü. Liste ve detay ekranlarında yatay
+taşma ölçülmedi. Dar ekran kontrolü masaüstü tarayıcısında gerçekleştirildi.
