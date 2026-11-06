@@ -1,36 +1,25 @@
-# Uygulama mimarisi
+# Entegrasyon mimarisi
 
-Ekip incelemesine sunulan tasarım, tek Django projesi ve ortak ilişkisel veritabanı kullanır. Django view'ları HTTP isteklerini karşılar, şablonlar sayfaları gösterir, ORM modelleri kayıtları ve veritabanı kısıtlarını tanımlar. Birden çok kaydı birlikte değiştiren ödünç ve iade kuralları dolaşım servisinde toplanacaktır.
+Tek Django projesi ve ortak ilişkisel veritabanı kullanılır. Tarayıcı Django Templates ile çalışır. Alan sahipliği ve ekip sorumlulukları aşağıdadır.
 
-| Alan | Sorumlu | Bugünkü durum ve sonraki teslim |
+| Alan | Sorumlu | Giriş noktası ve veri sahipliği |
 |---|---|---|
-| `library_system`, ortak şablonlar | 1. kişi | Proje ayarları ve ana URL yapılandırması mevcut. Ortak PostgreSQL kurulumu ve sayfa düzeni planlanıyor. Varsayılan yerel bağlantı SQLite. |
-| `books` | 2. kişi | PR #3 kitap, yazar, kategori, fiziksel kopya, yönetim paneli ve okuyucu kataloğunu içeriyor. Stok, müsait kopyaların sayısından hesaplanıyor. |
-| `accounts`, `circulation` | 3. kişi | Planlanan hesap, izin, ödünç, iade ve ceza modülleri. Üye ilişkisi için Django'nun yapılandırılmış kullanıcı modeli (`settings.AUTH_USER_MODEL`), roller için gruplar ve model izinleri öneriliyor. |
-| `recommendations` | 1. kişi | Planlanan öneri servisi adayları katalogdan okuyacak, dönen kitap kimliklerini doğrulayacak. Harici servis kesintisinde katalog ve dolaşım çalışmaya devam edecek. |
+| Ortak altyapı ve arayüz | Üye 1 | `library_system/settings.py`, `library_system/urls.py`, `templates/base.html`; profil, ortam, gezinme ve hata ekranları. |
+| Katalog | Üye 2 | `books/models.py`, `views.py`, `admin.py`; kitap, yazar, kategori, demirbaş ve raf bilgisi. Müsaitlik kopyalardan hesaplanır. |
+| Hesap | Üye 3 | Django User, Group ve Permission; kayıt otomatik Üye rolü verir. Kütüphaneciye yalnız katalog ve dolaşım izinleri tanınır. Superuser kullanıcı ve rol yönetir. |
+| Dolaşım | Üye 3 | `circulation/services.py`; teslim/iade/uzatma, tek seferlik ceza ve demo ödeme. Hesap ve personel sayfaları aynı servisleri kullanır. |
+| Öneriler | Üye 1 | `recommendations/services.py`; yerel aday seçimi, kota, sağlayıcı bağlantısı ve kimlik doğrulaması. Kataloğu salt okunur kullanır. |
 
-## Katalog ile dolaşım arasındaki sözleşme
+## Katalog ile dolaşımın sınırı
 
-- Katalog her fiziksel nüshayı benzersiz demirbaş koduyla oluşturur. Yeni `BookCopy` kaydının durumu `AVAILABLE` olur. Katalog formu durum alanını düzenlemeye kapatır.
-- Planlanan `Loan.copy` ilişkisi, fiziksel nüshayı birincil anahtarıyla referans alır (`ForeignKey("books.BookCopy", on_delete=PROTECT)`). Böylece geçmiş ödüncü bulunan kopyalar korunur. İlgili migration, katalog migration'ından sonra uygulanmalıdır.
-- Teslimde dolaşım servisi PostgreSQL üzerinde tek işlem içinde üye ve kopya kayıtlarını tutarlı sırayla kilitler. Üyenin limiti ve borç durumu ile kopyanın müsaitliğini kontrol eder, ödüncü oluşturur ve durumu `ON_LOAN` yapar. Kopya başına tek aktif ödünç için koşullu benzersizlik kısıtı planlanır.
-- İadede aynı servis ödüncü kapatır, gerekiyorsa o ödünce ait tek cezayı kesinleştirir ve kopyayı `AVAILABLE` yapar. Hata durumunda işlem bütünüyle geri alınır. Tekrarlanan iade ikinci ceza oluşturmamalıdır.
-- Kabul senaryosu: iki müsait kopyadan biri teslim edildiğinde katalogda bir, iade edildiğinde iki müsait kopya görünmelidir. Aynı kopyaya eşzamanlı iki teslim isteğinde yalnızca biri başarılı olmalıdır. Bu senaryolar dolaşım modülü eklendiğinde PostgreSQL üzerinde test edilecektir.
+`Loan.copy` fiziksel kopyanın birincil anahtarına bağlıdır ve silmeyi korur. Ödünç tarihçesi olan kopyanın kitap ilişkisini değiştirmek veritabanı tetikleyicisiyle engellenir. Django Admin kopya değişiklik isteğinde kaydı kilitler ve metadata kaydında yalnız değişen alanları yazar. Stok durumunun sahipliği dolaşım servisindedir.
 
-## Birleştirme ve sonraki işler
+Teslim, iade ve uzatma işlemleri üye → kopya → mevcut ödünç sırasıyla kilit alır. Üye limiti ve borç kontrolü aynı işlemde yapılır. Kopyanın aktif ödünç benzersizliği koşullu DB kısıtıdır. İade edilen kayda yeniden iade gönderildiğinde servis eski sonucu döndürür; kopya yeniden ödünce çıkmış olsa da durumuna dokunulmaz. Ödeme işleminde kilitlenen ceza, ilk görevliyi ve zamanı korur.
 
-1. Birinci kişi katalog rotalarının ve şablonlarının ortak gezinmeyle uyumunu inceler. İkinci kişi katalog migration'ını ve stok hesabını gösterir. Üçüncü kişi kopya kimliği, durum geçişleri ve geçmişin korunması üzerinde anlaşır.
-2. PR #3 ekip incelemesinden geçince katalog ortak dala alınır. Sonra ortak PostgreSQL kurulumu, rol izinleri ve ilk teslim–iade akışı tamamlanır.
-3. Süre, uzatma ve ceza hesaplarında README'deki iş kuralları kullanılır. Katalog birleştirildikten sonra öneri servisi ayrı dalda geliştirilebilir. Son kabul testi tüm rolleri ve uçtan uca akışı kapsar.
+Üye kitap için bir teslim talebi oluşturabilir veya bekleyen talebini iptal edebilir. Talep stoğu azaltmaz. Görevli aynı üye ve kitap için fiziksel teslimi onayladığında talep ve ödünç aynı veritabanı işleminde eşleşir.
 
-[Katalog veri modeli ve yapılan doğrulamalar](catalog-data-model.md) · [İş kuralları](../README.md#is-kurallari)
+## Ekip kabulü
 
-### PR #3 için inceleme adımları
-
-| Kim | Deneme | Beklenen sonuç |
-|---|---|---|
-| 1. kişi | Demo verisiyle ana sayfada “Atlası” arat, müsaitlik filtresini seç, detayı aç ve katalog bağlantısıyla dön. | Aynı kitap, arama ve müsaitlik seçimi korunur. |
-| 2. kişi | Geçici geliştirme veritabanında migration'ları uygula, `seed_catalog` komutunu iki kez çalıştır ve `python manage.py test books` komutunu çalıştır. | Üç demo kitabı ve üç fiziksel kopya bulunur, katalog testleri geçer. |
-| 3. kişi | `books/models.py` ve ilk migration'da `BookCopy` kimliğini, kitap ilişkisini ve durum değerlerini kontrol et. | Ödünç modelinde referans alınacak anahtar `BookCopy.pk` olarak netleşir. |
-
-Üçüncü kişinin bu aşamadaki teslimi model ilişkisinin gözden geçirilmesidir. İki eşzamanlı teslim isteğinin PostgreSQL üzerinde denenmesi dolaşım servisiyle birlikte yapılacaktır.
+1. Üye 1 temiz ortamı, oturumları, ortak gezinmeyi ve sağlayıcı kesintisi davranışını inceler.
+2. Üye 2 katalog filtrelerini, demirbaş aramasını, geçmişi olan kopyayı ve eşzamanlı raf güncellemesini kontrol eder.
+3. Üye 3 gerçek PostgreSQL üzerindeki 2 → 1 → 2 stok akışını, eşzamanlı teslimi, borç engelini, vade ve tekrarlı iade/ödeme kurallarını doğrular.
