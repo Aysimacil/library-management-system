@@ -75,3 +75,14 @@ class CatalogScreenTests(TestCase):
         self.assertEqual(restored.wsgi_request.GET, listing.wsgi_request.GET)
         self.assertEqual(restored.context["page_obj"].number, 2)
         self.assertEqual([b.title for b in restored.context["books"]], ["Ada & Deniz 12"])
+
+    def test_turkish_case_in_title_and_author_search(self):
+        from .models import Author
+
+        book = Book.objects.create(title="Gökyüzü ve Işık")
+        book.authors.add(Author.objects.create(name="İpek Çağrı"))
+        Book.objects.create(title="Başka kitap")
+        for query in ["GÖKYÜZÜ", "ışık", "ipek", "ÇAĞRI"]:
+            with self.subTest(query=query):
+                response = self.client.get(reverse("books:list"), {"q": query})
+                self.assertEqual([item.pk for item in response.context["books"]], [book.pk])

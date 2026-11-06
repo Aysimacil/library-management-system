@@ -1,7 +1,19 @@
-from django.db.models import Count, F, Q
+from django.db.models import Count, F, Q, Value
+from django.db.models.functions import Lower, Replace
 from django.views.generic import DetailView, ListView
 
 from .models import Book, BookCopy, Category
+
+
+# SQLite's LOWER handles ASCII only; map Turkish capitals before folding ASCII.
+TURKISH_CAPITALS = dict(zip("IİÇĞÖŞÜ", "ıiçğöşü"))
+
+
+def searchable_text(field):
+    expression = F(field)
+    for upper, lower in TURKISH_CAPITALS.items():
+        expression = Replace(expression, Value(upper), Value(lower))
+    return Lower(expression)
 
 
 def catalog_books():
@@ -21,7 +33,15 @@ class BookList(ListView):
         books = catalog_books()
         term = params.get("q", "").strip()
         if term:
-            books = books.filter(Q(title__icontains=term) | Q(authors__name__icontains=term) | Q(isbn__icontains=term))
+            folded = term.translate(str.maketrans(TURKISH_CAPITALS)).lower()
+            books = books.alias(
+                search_title=searchable_text("title"),
+                search_author=searchable_text("authors__name"),
+            ).filter(
+                Q(search_title__contains=folded)
+                | Q(search_author__contains=folded)
+                | Q(isbn__icontains=term)
+            )
         category = params.get("category", "")
         if category:
             if not category.isascii() or not category.isdecimal() or len(category) > 18:
