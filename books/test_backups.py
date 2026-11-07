@@ -43,7 +43,17 @@ class BackupArchiveTests(SimpleTestCase):
             (root / "media").mkdir()
             for args in [
                 ["migrate", "--noinput"],
-                ["shell", "-c", "from books.models import Book; Book.objects.create(title='Backup örneği')"],
+                ["shell", "-c", """
+from io import BytesIO
+from unittest.mock import patch
+from PIL import Image
+from django.core.files.base import ContentFile
+from books.models import Book
+buffer = BytesIO()
+Image.new("RGB", (20, 30)).save(buffer, "PNG")
+with patch("books.media_lifecycle.publish", side_effect=OSError):
+    Book.objects.create(title="Backup örneği", cover=ContentFile(buffer.getvalue(), name="image.png"))
+"""],
                 ["backup_library", "--output", str(root / "backup.zip")],
             ]:
                 subprocess.run([sys.executable, "manage.py", *args], env=env, check=True, capture_output=True, timeout=30)
@@ -51,6 +61,11 @@ class BackupArchiveTests(SimpleTestCase):
             self.assertEqual(engine, "sqlite")
             with sqlite3.connect(root / "restored/database.sqlite3") as db:
                 self.assertEqual(db.execute("SELECT title FROM books_book").fetchone()[0], "Backup örneği")
+                cover = db.execute("SELECT cover FROM books_book").fetchone()[0]
+                self.assertEqual(db.execute("SELECT COUNT(*) FROM books_coveroperation WHERE kind='WRITE'").fetchone()[0], 1)
+            restored_env = {**env, "DB_NAME": str(root / "restored/database.sqlite3"), "MEDIA_ROOT": str(root / "restored/media")}
+            subprocess.run([sys.executable, "manage.py", "process_cover_operations"], env=restored_env, check=True, capture_output=True, timeout=30)
+            self.assertTrue((root / "restored/media" / cover).read_bytes().startswith(b"\xff\xd8"))
             with self.assertRaises(ValueError):
                 restore_backup(root / "backup.zip", root / "restored")
             with self.assertRaises(ValueError):
