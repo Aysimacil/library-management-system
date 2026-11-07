@@ -167,4 +167,8 @@ class CoverOperation(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["name", "kind"], name="unique_cover_operation"),
+            models.CheckConstraint(
+                condition=Q(kind="WRITE", content__isnull=False) | Q(kind="DELETE", content__isnull=True),
+                name="cover_operation_content_matches_kind",
+            ),
         ]

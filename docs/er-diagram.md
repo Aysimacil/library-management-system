@@ -39,6 +39,17 @@ erDiagram
         datetime paid_at
         bigint paid_by_id FK
     }
+    COVER_OPERATION {
+        bigint id PK
+        string name
+        string kind
+        binary content
+        datetime created_at
+    }
+    MEDIA_LOCK {
+        bigint id PK
+        bigint version
+    }
     USAGE_WINDOW {
         string scope PK
         string window
@@ -47,3 +58,5 @@ erDiagram
 ```
 
 `UsageWindow` üye/dakika, üye/gün ve uygulama/gün sayaçlarını tutar. Katalog kitabı ile model önerisi arasında kalıcı ilişki kurulmaz. Diyagram uygulamanın alan ilişkilerini gösterir; Django'nun oturum ve admin günlük tabloları ayrıca standart migration'larla oluşturulur.
+
+Kapak işlem kuyruğunun `name` alanı dosya adını taşır. İlişki Book.cover değeri üzerinden uygulamada yönetilir. MediaLock yayın, silme ve yedekleme sırasında ortak kilit sağlar.
