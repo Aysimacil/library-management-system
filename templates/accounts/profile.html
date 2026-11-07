@@ -1,10 +1,16 @@
 {% extends "base.html" %}{% block title %}Hesabım · Kütüphane{% endblock %}
-{% block content %}<h1>Hesabım</h1><p>{{ user.username }} · Ödenmemiş ceza: <strong>{{ debt }} TL</strong></p>
-<h2>Bekleyen talepler</h2><ul>{% for entry in pending %}<li>{{ entry.book.title }} <form class="actions" method="post" action="{% url 'circulation:cancel' entry.pk %}">{% csrf_token %}<button>Talebi iptal et</button></form></li>{% empty %}<li>Bekleyen talebiniz yok.</li>{% endfor %}</ul>
-<h2>Aktif ödünçler</h2><ul class="catalog">{% for loan in active %}
-<li><h3>{{ loan.copy.book.title }}</h3><p>Demirbaş {{ loan.copy.inventory_code }}</p>
-<p>Son gün <strong>{{ loan.due_date }}</strong></p>{% if loan.due_date < today %}<p>Gecikmiş · Tahmini ceza {{ loan.estimate }} TL</p>{% endif %}
-{% if not loan.renewal_count and loan.due_date >= today %}<form method="post" action="{% url 'circulation:member-renew' loan.pk %}">{% csrf_token %}<button>Süreyi uzat</button></form>{% endif %}
-</li>{% empty %}<li>Aktif ödüncünüz yok.</li>{% endfor %}</ul>
-<h2>Geçmiş</h2><ul>{% for loan in history %}<li>{{ loan.copy.book.title }} · {{ loan.issued_at|date:"SHORT_DATE_FORMAT" }} – {{ loan.returned_at|date:"SHORT_DATE_FORMAT" }}</li>{% empty %}<li>Henüz iade kaydı yok.</li>{% endfor %}</ul>
-<h2>Cezalar</h2><ul>{% for fine in fines %}<li>{{ fine.loan.copy.book.title }} · {{ fine.amount }} TL · {% if fine.paid_at %}Ödendi{% else %}Ödenmedi{% endif %}</li>{% empty %}<li>Kesinleşmiş cezanız yok.</li>{% endfor %}</ul>{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">Okuma alanın</p><h1>Merhaba, {{ user.username }}.</h1><p class="lead">Kitapların, teslim tarihlerin ve okuma geçmişin.</p></div><a class="button secondary" href="{% url 'books:list' %}">Kataloğu keşfet</a></div>
+<div class="metric-grid"><div class="metric"><span>Aktif ödünç</span><strong>{{ active_count }} <small>/ 3</small></strong></div><div class="metric"><span>Gecikmiş kitap</span><strong>{{ overdue_count }}</strong></div><div class="metric"><span>Ödenmemiş ceza</span><strong>{{ debt }} <small>TL</small></strong></div></div>
+<div class="section-heading"><h2>Elindeki kitaplar</h2><a href="{% url 'recommendations:index' %}">Yeni bir kitap bul →</a></div>
+<div class="loan-grid">{% for loan in active %}
+<article class="loan-card">{% include "books/includes/cover.html" with book=loan.copy.book %}<div><p class="tag {% if loan.due_date < today %}late{% endif %}">{% if loan.due_date < today %}Gecikmiş{% else %}Ödünçte{% endif %}</p><h3><a href="{% url 'books:detail' loan.copy.book_id %}">{{ loan.copy.book.title }}</a></h3><p class="muted">Demirbaş {{ loan.copy.inventory_code }}</p><p>Son gün <strong>{{ loan.due_date }}</strong></p>
+{% if loan.due_date < today %}<p class="late-text">Tahmini ceza {{ loan.estimate }} TL</p>{% endif %}
+{% if not loan.renewal_count and loan.due_date >= today %}<form class="actions" method="post" action="{% url 'circulation:member-renew' loan.pk %}">{% csrf_token %}<button>Süreyi uzat</button></form>{% elif loan.renewal_count %}<p class="muted">Uzatma hakkı kullanıldı.</p>{% endif %}
+</div></article>{% empty %}<div class="empty-state"><h3>Aktif ödüncünüz yok.</h3><p>İlgini çeken bir kitabı katalogdan talep edebilirsin.</p></div>{% endfor %}</div>
+<div class="dashboard-split">
+<section class="panel"><h2>Bekleyen talepler</h2><ul class="record-list">{% for entry in pending %}<li><strong>{{ entry.book.title }}</strong><form class="actions" method="post" action="{% url 'circulation:cancel' entry.pk %}">{% csrf_token %}<button class="secondary">Talebi iptal et</button></form></li>{% empty %}<li class="muted">Bekleyen talebiniz yok.</li>{% endfor %}</ul></section>
+<section class="panel"><h2>Cezalar</h2><ul class="record-list">{% for fine in fines %}<li><div><strong>{{ fine.loan.copy.book.title }}</strong><span class="muted">{{ fine.amount }} TL</span></div><span class="tag">{% if fine.paid_at %}Ödendi{% else %}Ödenmedi{% endif %}</span></li>{% empty %}<li class="muted">Kesinleşmiş cezanız yok.</li>{% endfor %}</ul></section>
+</div>
+<section class="panel"><h2>Okuma geçmişin</h2><div class="table-scroll"><table><thead><tr><th scope="col">Kitap</th><th scope="col">Teslim</th><th scope="col">İade</th></tr></thead><tbody>{% for loan in history %}<tr><td><a href="{% url 'books:detail' loan.copy.book_id %}">{{ loan.copy.book.title }}</a></td><td>{{ loan.issued_at|date:"d M Y" }}</td><td>{{ loan.returned_at|date:"d M Y" }}</td></tr>{% empty %}<tr><td colspan="3">Henüz iade kaydı yok.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

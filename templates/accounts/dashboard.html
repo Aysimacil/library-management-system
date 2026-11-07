@@ -1,2 +1,17 @@
-{% extends "base.html" %}{% block content %}<h1>Yönetim</h1><ul class="catalog metrics">{% for name,value in metrics %}<li>{{ name }}<strong>{{ value }}</strong></li>{% endfor %}</ul>
-<a href="{% url 'admin:index' %}">Kayıt ve kullanıcı yönetimine geç</a>{% endblock %}
+{% extends "base.html" %}{% block title %}Yönetim · Kütüphane{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">Genel bakış</p><h1>Kütüphane bugün.</h1><p class="lead">Koleksiyonun, hareketlerin ve üyelerin güncel durumu.</p></div><a class="button secondary" href="{% url 'admin:index' %}">Kayıt yönetimi</a></div>
+<div class="metric-grid">{% for name,value in metrics %}<div class="metric"><span>{{ name }}</span><strong>{{ value }}</strong></div>{% endfor %}</div>
+<div class="dashboard-split">
+<section class="panel"><div class="section-heading"><h2>Ödünç ve iade hareketleri</h2>
+<form class="inline" method="get"><label for="period">Dönem</label><select id="period" name="days"><option value="7" {% if period_days == 7 %}selected{% endif %}>Son 7 gün</option><option value="30" {% if period_days == 30 %}selected{% endif %}>Son 30 gün</option><option value="90" {% if period_days == 90 %}selected{% endif %}>Son 90 gün</option></select><button>Göster</button></form></div>
+<div class="metric-grid compact"><div class="metric"><span>Bu dönemde teslim</span><strong>{{ issued_total }}</strong></div><div class="metric"><span>Bu dönemde iade</span><strong>{{ returned_total }}</strong></div><div class="metric"><span>Demo tahsilat</span><strong>{{ paid_total }} TL</strong></div></div>
+<details><summary>Günlük hareketleri göster</summary><div class="table-scroll"><table><caption>Son {{ period_days }} günün işlem sayıları</caption><thead><tr><th scope="col">Tarih</th><th scope="col">Teslim</th><th scope="col">İade</th></tr></thead><tbody>{% for row in activity %}<tr><td>{{ row.day|date:"d M Y" }}</td><td>{{ row.issued }}</td><td>{{ row.returned }}</td></tr>{% endfor %}</tbody></table></div></details>
+</section>
+<section class="panel"><h2>Stok kullanımı</h2><p class="large-number">%{{ occupancy }}</p><meter min="0" max="100" value="{{ occupancy }}" aria-label="Ödünçteki kopyaların oranı">%{{ occupancy }}</meter><p class="muted">{{ loaned_copies }} fiziksel kopya ödünçte.</p><hr><h3>Ödenmemiş cezalar</h3><p class="balance">{{ outstanding_total }} TL</p></section>
+</div>
+<div class="dashboard-split">
+<section class="panel"><h2>Son işlemler</h2><ul class="record-list">{% for loan in recent_loans %}<li><div><strong>{{ loan.copy.book.title }}</strong><span class="muted">{{ loan.member.username }} · {{ loan.issued_at|date:"d M Y" }}</span></div><span class="tag">{% if loan.returned_at %}İade edildi{% else %}Ödünçte{% endif %}</span></li>{% empty %}<li>Henüz ödünç kaydı yok.</li>{% endfor %}</ul></section>
+<section class="panel"><h2>En çok ödünç alınanlar</h2><ul class="record-list">{% for book in popular_books %}<li><a href="{% url 'books:detail' book.pk %}">{{ book.title }}</a><strong>{{ book.loan_total }} teslim</strong></li>{% empty %}<li>Kitaplar ödünç verildikçe bu liste oluşacak.</li>{% endfor %}</ul></section>
+</div>
+{% endblock %}

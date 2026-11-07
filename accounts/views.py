@@ -36,7 +36,7 @@ def profile(request):
         loan.estimate = calculate_fine(loan, today)
     fines = Fine.objects.filter(loan__member=request.user).select_related("loan__copy__book")
     return render(request, "accounts/profile.html", {
-        "active": active, "history": loans.filter(returned_at__isnull=False),
+        "active": active, "active_count": len(active), "overdue_count": sum(loan.due_date < today for loan in active), "history": loans.filter(returned_at__isnull=False),
         "fines": fines, "debt": fines.filter(paid_at__isnull=True).aggregate(total=Sum("amount"))["total"] or 0,
         "today": today, "pending": CheckoutRequest.objects.filter(member=request.user, status="PENDING").select_related("book"),
     })
@@ -46,11 +46,8 @@ def profile(request):
 def dashboard(request):
     if not request.user.is_superuser:
         raise PermissionDenied
-    active = Loan.objects.filter(returned_at__isnull=True)
-    metrics = [
-        ("Kitap", Book.objects.count()), ("Fiziksel kopya", BookCopy.objects.count()),
-        ("Müsait kopya", BookCopy.objects.filter(status=BookCopy.Status.AVAILABLE).count()),
-        ("Aktif ödünç", active.count()), ("Gecikmiş ödünç", active.filter(due_date__lt=timezone.localdate()).count()),
-        ("Üye", get_user_model().objects.filter(groups__name=MEMBER).count()),
-    ]
-    return render(request, "accounts/dashboard.html", {"metrics": metrics})
+    from .statistics import library_statistics
+
+    selected = request.GET.get("days", "30")
+    days = int(selected) if selected in {"7", "30", "90"} else 30
+    return render(request, "accounts/dashboard.html", library_statistics(days))

@@ -19,6 +19,12 @@ from .services import borrow_book, check_account, pay_fine, renew_loan, return_b
 @permission_required("circulation.view_loan", raise_exception=True)
 def desk(request):
     q = request.GET.get("q", "").strip()
+    all_active = Loan.objects.filter(returned_at=None)
+    overview = {
+        "active": all_active.count(),
+        "overdue": all_active.filter(due_date__lt=timezone.localdate()).count(),
+        "pending": CheckoutRequest.objects.filter(status="PENDING").count(),
+    }
     active = Loan.objects.filter(returned_at=None).select_related("member", "copy__book")
     copies = BookCopy.objects.select_related("book")
     members = get_user_model().objects.filter(groups__name=MEMBER, is_active=True)
@@ -36,7 +42,7 @@ def desk(request):
         "loans": active[:100], "copies": copies[:25] if q else [], "members": members[:25] if q else [],
         "fines": fines[:100] if request.user.has_perm("circulation.view_fine") else [],
         "pending": CheckoutRequest.objects.filter(status="PENDING").select_related("member", "book").order_by("created_at")[:100],
-        "today": timezone.localdate(),
+        "today": timezone.localdate(), "overview": overview,
     })
 
 
