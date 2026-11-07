@@ -2,8 +2,8 @@
 
 Django ve PostgreSQL kullanılarak geliştirilecek web tabanlı bir Kütüphane Yönetim Sistemi. Proje; kitap kataloğu ve arama, kitap kopyalarının stok takibi, ödünç alma ve iade işlemleri, gecikme cezası hesaplama ve Büyük Dil Modeli (LLM) destekli kitap özeti/kişiselleştirilmiş öneri özelliklerini tek bir uygulamada birleştirmeyi amaçlar.
 
-> **Ders:** CEN317 – Engineering Design  
-> **Bölüm:** Bilgisayar Mühendisliği, Çukurova Üniversitesi  
+> **Ders:** CEN317 – Engineering Design
+> **Bölüm:** Bilgisayar Mühendisliği, Çukurova Üniversitesi
 > **Proje durumu:** Geliştirme aşamasında. Bu README’deki özellikler hedeflenen kapsamı anlatır; tamamlandığı doğrulanmamış işlevler tamamlanmış kabul edilmemelidir.
 
 **Katalog uygulama notu:** Kitap, yazar, kategori ve fiziksel kopya modelleri ile Django Admin yönetimi mevcut `books` uygulamasında uygulanmıştır. Katalog listesi, arama ve filtreleme ana sayfada, kitap ayrıntıları ise listeden erişilen detay sayfasındadır. Uygulanan veri modeli ve ekipler arası bağlantılar için [katalog veri modeli](docs/catalog-data-model.md) belgesine bakın. Aşağıdaki mimari ve dizin yapısı hedef tasarımı göstermeye devam eder.

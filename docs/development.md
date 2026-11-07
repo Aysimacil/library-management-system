@@ -24,3 +24,8 @@ tamamı geçti. Örnek veri iki kez yüklenince 5 kopya ve 2 ödünç kaydı kor
 Üretim başlangıç profili HSTS kurulumu için W004 uyarısı veriyor. TLS doğrulanmış
 profil değerleriyle check --deploy --fail-level WARNING başarılı. Canlı HTTPS,
 SMTP teslimi ve Gemini hesabı doğrulanmadı.
+
+WebKit iPhone profili ve Chromium personel tarayıcısı birlikte kullanılarak
+üye kaydı → kitap talebi → personel teslimi → üyeden uzatma → personel iadesi →
+üyenin geçmişi akışı doğrulandı. Üye personel ekranından 403 aldı. API anahtarı
+olmadan öneri ekranı anlaşılır hata gösterdi. Dar profilde yatay taşma görülmedi.
