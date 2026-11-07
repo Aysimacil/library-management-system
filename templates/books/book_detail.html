@@ -1,14 +1,19 @@
 {% extends "books/catalog_base.html" %}
 {% block title %}{{ book.title }} · Katalog{% endblock %}
 {% block content %}
-<a href="{% url 'books:list' %}{% querystring %}">← Kitap kataloğu</a>
-<h1>{{ book.title }}</h1>
-<p>{{ book.authors.all|join:", " }}</p>
-<dl><dt>Kategoriler</dt><dd>{{ book.categories.all|join:", "|default:"Belirtilmemiş" }}</dd>
-<dt>ISBN</dt><dd>{{ book.isbn|default:"Belirtilmemiş" }}</dd>
-<dt>Yayın yılı</dt><dd>{{ book.publication_year|default:"Belirtilmemiş" }}</dd>
-<dt>Müsaitlik</dt><dd>{{ book.available }} / {{ book.total }} kopya müsait</dd></dl>
-{% if book.available and can_request %}<form method="post" action="{% url 'circulation:request' book.pk %}">{% csrf_token %}<button>Ödünç talep et</button></form>{% endif %}
-{% for copy in available_copies %}<a href="{% url 'circulation:desk' %}?copy={{ copy.inventory_code|urlencode }}">{{ copy.inventory_code }} · Teslim başlat</a>{% endfor %}
-{% if book.description %}<h2>Açıklama</h2>{{ book.description|linebreaks }}{% endif %}
+<a class="back-link" href="{% url 'books:list' %}{% querystring %}">← Kitap kataloğu</a>
+<div class="book-detail">
+    {% include "books/includes/cover.html" %}
+    <div><div class="tag-row">{% for category in book.categories.all %}<a class="tag" href="{% url 'books:list' %}?category={{ category.pk }}">{{ category.name }}</a>{% endfor %}</div>
+        <h1>{{ book.title }}</h1>
+        <p class="lead">{{ book.authors.all|join:", "|default:"Yazar belirtilmemiş" }}</p>
+        <p class="stock {% if book.available %}in-stock{% else %}out-of-stock{% endif %}">{{ book.available }} / {{ book.total }} kopya müsait</p>
+        <dl class="metadata"><div><dt>ISBN</dt><dd>{{ book.isbn|default:"Belirtilmemiş" }}</dd></div><div><dt>Yayın yılı</dt><dd>{{ book.publication_year|default:"Belirtilmemiş" }}</dd></div><div><dt>Toplam kopya</dt><dd>{{ book.total }}</dd></div></dl>
+        {% if book.available and can_request %}<form class="actions" method="post" action="{% url 'circulation:request' book.pk %}">{% csrf_token %}<button>Ödünç talep et</button></form><p class="muted">Talebin görevli tarafından fiziksel teslim sırasında onaylanır.</p>
+        {% elif not user.is_authenticated %}<a class="button" href="{% url 'accounts:login' %}?next={% url 'books:detail' book.pk %}">Talep için giriş yap</a>{% endif %}
+    </div>
+</div>
+<section class="panel"><h2>Kitap hakkında</h2>{% if book.description %}{{ book.description|linebreaks }}{% else %}<p class="muted">Bu kitap için henüz açıklama eklenmemiş.</p>{% endif %}</section>
+{% if perms.circulation.issue_loan %}<section class="panel"><h2>Teslime uygun kopyalar</h2><ul class="record-list">{% for copy in available_copies %}<li><span><strong>{{ copy.inventory_code }}</strong> · Raf {{ copy.shelf_location|default:"belirtilmemiş" }}</span><a class="button secondary" href="{% url 'circulation:desk' %}?copy={{ copy.inventory_code|urlencode }}">Teslim başlat</a></li>{% empty %}<li>Müsait kopya bulunmuyor.</li>{% endfor %}</ul></section>{% endif %}
+{% if related_books %}<div class="section-heading"><h2>Aynı kategoriden</h2></div><div class="catalog-grid">{% for book in related_books %}{% include "books/includes/card.html" %}{% endfor %}</div>{% endif %}
 {% endblock %}

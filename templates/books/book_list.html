@@ -1,24 +1,22 @@
 {% extends "books/catalog_base.html" %}
 {% block content %}
-<h1>Kitap kataloğu</h1>
-<form method="get" role="search">
-<label>Kitap, yazar, ISBN veya demirbaş <input name="q" value="{{ request.GET.q }}" type="search"></label>
-<label>Kategori <select name="category"><option value="">Tümü</option>{% for category in categories %}<option value="{{ category.pk }}"{% if request.GET.category == category.pk|stringformat:"s" %} selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></label>
-<label>Sıralama <select name="sort"><option value="title">Kitap adı</option><option value="year"{% if request.GET.sort == "year" %} selected{% endif %}>En yeni yayın</option></select></label>
-<label><input type="checkbox" name="available" value="1"{% if request.GET.available == "1" %} checked{% endif %}> Yalnızca müsait kitaplar</label>
-<button>Ara</button><a href="{% url 'books:list' %}">Temizle</a>
+<div class="page-heading"><div><p class="eyebrow">Koleksiyon</p><h1>Bir sonraki kitabını bul.</h1><p class="lead">Yazarları keşfet, ilgini çeken konulara göz at.</p></div>
+{% if user.is_authenticated %}<a class="button secondary" href="{% url 'recommendations:index' %}">Bana kitap öner</a>{% endif %}</div>
+<form method="get" class="catalog-search" role="search">
+    <div class="search-main">{{ filters.q.label_tag }}{{ filters.q }}{{ filters.q.errors }}<button>Ara</button></div>
+    <details class="filter-panel" {% if request.GET.category or request.GET.author or request.GET.year_from or request.GET.year_to or filters.errors %}open{% endif %}>
+        <summary>Aramayı daralt</summary>
+        <div class="filter-grid">{% for field in filters %}{% if field.name != 'q' and field.name != 'available' %}<div>{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}</div>
+    </details>
+    <div class="search-footer"><label class="checkbox">{{ filters.available }} Yalnızca müsait kitaplar</label><a href="{% url 'books:list' %}">Filtreleri temizle</a></div>
 </form>
-<ul class="catalog">
-{% for book in books %}
-<li><h2><a href="{% url 'books:detail' book.pk %}{% querystring %}">{{ book.title }}</a></h2>
-<p>{{ book.authors.all|join:", " }}{% if book.publication_year %} · {{ book.publication_year }}{% endif %}</p>
-<p>{{ book.categories.all|join:", " }}</p>
-<p>{{ book.available }} / {{ book.total }} kopya müsait</p></li>
-{% empty %}<li>Katalogda gösterilecek kitap bulunamadı.</li>{% endfor %}
-</ul>
-{% if is_paginated %}<nav aria-label="Sayfalar">
-{% if page_obj.has_previous %}<a href="{% querystring page=page_obj.previous_page_number %}">Önceki</a>{% endif %}
-{{ page_obj.number }} / {{ paginator.num_pages }}
-{% if page_obj.has_next %}<a href="{% querystring page=page_obj.next_page_number %}">Sonraki</a>{% endif %}
+<div class="section-heading"><h2>Kitaplar</h2><span class="muted" role="status">{{ paginator.count }} kitap bulundu</span></div>
+<div class="catalog-grid">{% for book in books %}{% include "books/includes/card.html" %}{% empty %}
+<div class="empty-state"><h2>Gösterilecek kitap bulunamadı</h2><p>Aramayı kısaltmayı veya filtreleri temizlemeyi deneyebilirsin.</p><a href="{% url 'books:list' %}">Tüm kitaplara dön</a></div>
+{% endfor %}</div>
+{% if is_paginated %}<nav class="pagination" aria-label="Sayfalar">
+{% if page_obj.has_previous %}<a class="button secondary" href="{% querystring page=page_obj.previous_page_number %}">Önceki</a>{% endif %}
+<span>{{ page_obj.number }} / {{ paginator.num_pages }}</span>
+{% if page_obj.has_next %}<a class="button secondary" href="{% querystring page=page_obj.next_page_number %}">Sonraki</a>{% endif %}
 </nav>{% endif %}
 {% endblock %}

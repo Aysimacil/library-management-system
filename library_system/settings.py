@@ -208,3 +208,5 @@ LIBRARY_CLOSED_DATES = items("LIBRARY_CLOSED_DATES")
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "gemini")
 LLM_MODEL = os.environ.get("LLM_MODEL", "gemini-3.5-flash-lite")
 LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
+
+MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", str(BASE_DIR / "media")))

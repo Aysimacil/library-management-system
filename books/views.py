@@ -1,5 +1,10 @@
 from django.db.models import Count, Exists, F, OuterRef, Q, Value
 from django.db.models.functions import Lower, Replace
+from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404
+from django.utils.functional import cached_property
+from django.views.decorators.http import require_safe
+from .forms import CatalogFilterForm
 from django.views.generic import DetailView, ListView
 
 from .models import Book, BookCopy, Category
@@ -28,10 +33,16 @@ class BookList(ListView):
     paginate_by = 12
     context_object_name = "books"
 
+    @cached_property
+    def filters(self):
+        return CatalogFilterForm(self.request.GET)
+
     def get_queryset(self):
-        params = self.request.GET
+        if not self.filters.is_valid():
+            return catalog_books().none()
+        params = self.filters.cleaned_data
         books = catalog_books()
-        term = params.get("q", "").strip()
+        term = params.get("q", "")
         if term:
             folded = term.translate(str.maketrans(TURKISH_CAPITALS)).lower()
             matching_codes = BookCopy.objects.filter(book_id=OuterRef('pk'), inventory_code__icontains=term)
@@ -44,20 +55,24 @@ class BookList(ListView):
                 | Q(isbn__icontains=term)
                 | Exists(matching_codes)
             )
-        category = params.get("category", "")
-        if category:
-            if not category.isascii() or not category.isdecimal() or len(category) > 18:
-                return books.none()
-            books = books.filter(categories__pk=int(category))
-        if params.get("available") == "1":
+        if params.get("category"):
+            books = books.filter(categories=params["category"])
+        if params.get("author"):
+            books = books.filter(authors=params["author"])
+        if params.get("year_from"):
+            books = books.filter(publication_year__gte=params["year_from"])
+        if params.get("year_to"):
+            books = books.filter(publication_year__lte=params["year_to"])
+        if params.get("available"):
             books = books.filter(available__gt=0)
         sort = params.get("sort")
-        if sort == "year":
-            return books.order_by(F("publication_year").desc(nulls_last=True), "title", "pk")
-        return books.order_by("title", "pk")
+        if sort in {"year", "oldest"}:
+            order = F("publication_year").desc(nulls_last=True) if sort == "year" else F("publication_year").asc(nulls_last=True)
+            return books.order_by(order, "title", "pk")
+        return books.order_by("-title" if sort == "title_desc" else "title", "pk")
 
     def get_context_data(self, **kwargs):
-        return super().get_context_data(categories=Category.objects.all(), **kwargs)
+        return super().get_context_data(filters=self.filters, **kwargs)
 
 
 class BookDetail(DetailView):
@@ -73,4 +88,20 @@ class BookDetail(DetailView):
         context["can_request"] = user.is_authenticated and user.groups.filter(name="Üye").exists()
         if user.has_perm("circulation.issue_loan"):
             context["available_copies"] = self.object.copies.filter(status=BookCopy.Status.AVAILABLE)
+        context["related_books"] = catalog_books().filter(categories__in=self.object.categories.all()).exclude(pk=self.object.pk).order_by("title", "pk")[:4]
         return context
+
+
+@require_safe
+def cover(request, pk):
+    book = get_object_or_404(Book, pk=pk)
+    if not book.cover:
+        raise Http404
+    try:
+        stream = book.cover.open("rb")
+    except OSError:
+        raise Http404 from None
+    response = FileResponse(stream, content_type="image/jpeg")
+    response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "public, max-age=3600"
+    return response
