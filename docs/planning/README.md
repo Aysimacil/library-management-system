@@ -54,3 +54,24 @@ assertion bulunması tüm olası sınırların doğrulandığı anlamına gelmez
 rapor şablonları ve teslim tarihleri, kaynakça/lisans, Gemini erişimi ve kalite
 ölçütleri, ortak kabul tabanı ve entegrasyon sırası. Başarı ölçütü yeni modül
 sayısı değil, kanıtlanmış kapsam ve ekipçe yürütülebilen görevlerdir.
+
+## GitHub yayın durumu
+
+İlk iki doküman commit'i `b38e87f` (gereksinim/analiz) ve `e6d9412`
+(roadmap/backlog/Sprint 1) olarak GitHub'a gönderildi. Yalnız bu planlama dalı
+push edildi; main ve mevcut feature dalları değişmedi.
+
+Hedefi `feature/library-production-readiness` olan Draft PR oluşturma çağrısı da
+GitHub bağlantısında **403 Resource not accessible by integration** döndürdü.
+PR oluşturulmadı; mevcut PR'lara yorum veya değişiklik yapılmadı.
+[Planlama dalını karşılaştırın / PR hazırlayın](https://github.com/Aysimacil/library-management-system/compare/feature/library-production-readiness...docs/sprint-0-planning).
+Yetkili ekip üyesi karşılaştırmada hedef dalı kontrol edip **Draft** seçebilir.
+Bu erişim sınırı otomatik onay reddi değil, GitHub integration yazma yetkisi
+sınırıdır; git push başarılı olmuştur.
+
+Doküman yerel bağlantıları ve anılan test/modül adları kaynakla eşleştirildi;
+20 gereksinimin her birindeki 11 boyut, 12 backlog görevi, 7 sprint ve 5 katalog
+senaryosu yapısal kontrolü geçti. Bu, ekip içerik kabulünün yerine geçmez.
+Mevcut workflow bu docs dalını ve production hedefli PR'ı dinlemediği için
+planlama commit'leri için yeni CI başarısı iddia edilmez; yukarıdaki taban CI
+ve ayrı yerel test kanıtları kullanılır.
