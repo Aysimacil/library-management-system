@@ -1,13 +1,13 @@
 # Kütüphane Yönetim Sistemi
 
-Katalog, üyelik, fiziksel teslim, iade, uzatma ve gecikme cezası işlemlerini tek Django uygulamasında birleştiren ders projesi. Bu README `feature/library-integration-mvp` sürümünü anlatır.
+Katalog, üyelik, fiziksel teslim, iade, uzatma ve gecikme cezası işlemlerini tek Django uygulamasında birleştiren ders projesi. Bu README `feature/library-ui-enhancements` sürümünü anlatır.
 
 ## Yerel kurulum
 
 Python 3.12, Django 6.1.2 ve Django Templates kullanılır. Varsayılan yerel veritabanı SQLite'tır. Eşzamanlı personel işlemleri için PostgreSQL kullanın.
 
 ```bash
-git clone --branch feature/library-integration-mvp https://github.com/Aysimacil/library-management-system.git
+git clone --branch feature/library-ui-enhancements https://github.com/Aysimacil/library-management-system.git
 cd library-management-system
 python3.12 -m venv .venv
 source .venv/bin/activate
@@ -66,3 +66,26 @@ SQLite ve PostgreSQL test işleri [CI workflow'unda](.github/workflows/tests.yml
 - [Orijinal ders kapsamı ve yol haritası](docs/project-brief.md)
 
 Rezervasyon kuyruğu, gerçek para tahsilatı, otomatik e-posta bildirimi ve canlı dağıtım bu sürümün dışındadır.
+
+## Katalog ve arayüz geliştirmeleri
+
+Katalog yazar, kategori, yıl aralığı ve müsaitlik ile filtrelenebilir. Geçersiz yıl
+aralıkları formda gösterilir. Detaydan dönüşte filtreler ve sayfa seçimi korunur.
+Yönetici ekranı 7/30/90 günlük teslim, iade ve demo tahsilatları; günlük hareketleri,
+ödünçteki stok oranını ve en çok ödünç alınan kitapları gerçek kayıtlardan hesaplar.
+
+Yetkili personel Django Admin kitap formundan JPEG, PNG veya WebP kapak yükleyebilir.
+Girdi en fazla 4 MB / 12 milyon piksel olabilir. Dosya içeriği Pillow ile açılır,
+yeniden boyutlandırılır, metadata'sız JPEG olarak rastgele adla saklanır.
+SVG ve harici kapak URL'si kabul edilmez. Dosyalar `MEDIA_ROOT` altında tutulur
+(varsayılan `media/`); bu klasör Git dışında ve çalıştırma yetkisi olmayan kalıcı
+depolamada olmalıdır. Kapaklar `/kapak/<kitap-id>/` üzerinden JPEG ve nosniff
+başlıklarıyla sunulur. Eksik kapakta başlığı içeren yer tutucu görünür.
+Değiştirilen eski kapak dosyaları otomatik silinmez; medya yedeği ve artık dosya
+temizliği dağıtımın saklama politikasına göre yönetilmelidir.
+
+Öneri ekranında kategori, hariç tutulan kategori, müsaitlik ve okuma düzeyi seçilebilir.
+Yerel puanlama başlık, yazar, kategori ve açıklama eşleşmelerini sıralar. Sağlayıcıya
+yalnız katalogda bulunan kavramlar, seçimler ve adayların eşleşme puanı gider;
+serbest girdi ve hesap bilgileri paylaşılmaz. Taklit API testleri canlı Gemini
+bağlantısını doğrulamaz. Anahtar ve model erişimi hedef hesapta ayrıca denenmelidir.

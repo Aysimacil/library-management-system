@@ -1,7 +1,7 @@
 name: Library checks
 on:
   push:
-    branches: [feature/library-integration-mvp, main]
+    branches: [feature/library-integration-mvp, feature/library-ui-enhancements, main]
   pull_request:
     branches: [main]
 
