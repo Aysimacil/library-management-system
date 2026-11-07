@@ -59,6 +59,7 @@ jobs:
           echo "PG_RESTORE_PATH=$RUNNER_TEMP/library-pg-restore" >> "$GITHUB_ENV"
           echo "PG_CONTAINER_ID=$PG_CONTAINER_ID" >> "$GITHUB_ENV"
       - run: python manage.py test --verbosity 2
+      - run: gunicorn --check-config --config deploy/gunicorn.conf.py library_system.wsgi:application
       - run: python manage.py collectstatic --noinput
       - run: python manage.py smoke_gemini
         env:

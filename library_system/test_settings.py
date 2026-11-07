@@ -66,3 +66,12 @@ assert s.MAILERS['default']['OPTIONS']['use_tls']
                 result = self.run_django(["check"], **{**self.production(), key: value})
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("ImproperlyConfigured", result.stderr)
+
+    def test_smtp_ssl_profile_builds_mail_backend_without_network(self):
+        result = self.run_django(["shell", "-c", """
+from django.core.mail import mailers
+connection = mailers["default"]
+assert connection.use_ssl and not connection.use_tls
+assert connection.timeout == 10
+"""], **self.production(), SMTP_SECURITY="ssl", SMTP_PORT="465")
+        self.assertEqual(result.returncode, 0, result.stderr)

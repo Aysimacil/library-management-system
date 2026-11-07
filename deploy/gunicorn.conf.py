@@ -12,3 +12,5 @@ errorlog = "-"
 capture_output = True
 # Django trusts the proxy only via its explicit TRUST_PROXY_HTTPS setting.
 forwarded_allow_ips = ""
+# Avoid creating a management socket under the service user's home directory.
+control_socket_disable = True
