@@ -104,5 +104,5 @@ def cover(request, pk):
             stream = ContentFile(bytes(pending.content))
     response = FileResponse(stream, content_type="image/jpeg")
     response["X-Content-Type-Options"] = "nosniff"
-    response["Cache-Control"] = "public, max-age=3600"
+    response["Cache-Control"] = "public, max-age=3600" if request.GET.get("v") == book.cover.name else "no-cache"
     return response

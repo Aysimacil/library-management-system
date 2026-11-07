@@ -173,3 +173,17 @@ class MediaLifecycleTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, reverse("books:cover", args=[book.pk]))
         self.assertEqual(book.cover.url, reverse("books:cover", args=[book.pk]))
+
+    def test_replaced_cover_gets_new_cache_key_and_admin_url_revalidates(self):
+        book = self.book()
+        old = book.cover.name
+        response = self.client.get(reverse("books:cover", args=[book.pk]))
+        self.assertEqual(response["Cache-Control"], "no-cache")
+        b"".join(response.streaming_content)
+        with self.captureOnCommitCallbacks(execute=True):
+            book.cover = upload()
+            book.save()
+        self.assertNotEqual(book.cover.name, old)
+        response = self.client.get(reverse("books:cover", args=[book.pk]), {"v": book.cover.name})
+        self.assertEqual(response["Cache-Control"], "public, max-age=3600")
+        b"".join(response.streaming_content)
