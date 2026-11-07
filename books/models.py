@@ -79,7 +79,7 @@ class Book(models.Model):
             self._original_cover = self.cover.name
 
     def save(self, *args, **kwargs):
-        from .media_lifecycle import enqueue_delete, flush_safely, media_lock
+        from .media_lifecycle import MANAGED_NAME, enqueue_delete, flush_safely, media_lock
         using = kwargs.get("using") or router.db_for_write(type(self), instance=self)
         fields = kwargs.get("update_fields")
         if fields is not None and "cover" not in fields:
@@ -93,6 +93,11 @@ class Book(models.Model):
             if self.cover and not self.cover._committed:
                 content = prepare_cover(self.cover).read()
                 self.cover = cover_path(self, "")
+            if content is None and self.cover.name and self.cover.name != previous:
+                pending = CoverOperation.objects.using(using).filter(name=self.cover.name, kind="WRITE").exists()
+                if not MANAGED_NAME.fullmatch(self.cover.name) or not (pending or self.cover.storage.exists(self.cover.name)):
+                    from django.core.exceptions import ValidationError
+                    raise ValidationError("Referenced cover is unavailable.")
             super().save(*args, **kwargs)
             self._original_cover = self.cover.name
             if content is not None:

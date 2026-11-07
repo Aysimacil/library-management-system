@@ -193,6 +193,9 @@ EMAIL_MODE = os.environ.get("EMAIL_MODE", "smtp" if PRODUCTION else "console")
 if EMAIL_MODE == "console" and not PRODUCTION:
     MAILERS = {"default": {"BACKEND": "django.core.mail.backends.console.EmailBackend"}}
 elif EMAIL_MODE == "smtp":
+    SMTP_SECURITY = os.environ.get("SMTP_SECURITY", "starttls")
+    if SMTP_SECURITY not in {"starttls", "ssl"}:
+        raise ImproperlyConfigured("SMTP_SECURITY must be starttls or ssl.")
     MAILERS = {"default": {
         "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
         "OPTIONS": {
@@ -200,7 +203,8 @@ elif EMAIL_MODE == "smtp":
             "port": int(os.environ.get("SMTP_PORT", "587")),
             "username": os.environ.get("SMTP_USER", ""),
             "password": os.environ.get("SMTP_PASSWORD", ""),
-            "use_tls": True,
+            "use_tls": SMTP_SECURITY == "starttls",
+            "use_ssl": SMTP_SECURITY == "ssl",
             "timeout": 10,
         },
     }}
@@ -236,3 +240,12 @@ LOGGING = {
 }
 PG_DUMP_PATH = os.environ.get("PG_DUMP_PATH", "pg_dump")
 FILE_UPLOAD_TEMP_DIR = os.environ.get("FILE_UPLOAD_TEMP_DIR") or None
+
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "webmaster@localhost")
+if PRODUCTION:
+    from django.core.validators import validate_email
+    from django.core.exceptions import ValidationError
+    try:
+        validate_email(required("DEFAULT_FROM_EMAIL"))
+    except ValidationError:
+        raise ImproperlyConfigured("Set a valid production DEFAULT_FROM_EMAIL.") from None

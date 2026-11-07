@@ -19,11 +19,15 @@ def live(request):
 
 @require_safe
 def ready(request):
-    checks = {"database": False, "media": False}
+    checks = {"database": False, "media": False, "static": False}
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
-            checks["database"] = cursor.fetchone()[0] == 1
+            connected = cursor.fetchone()[0] == 1
+        from books.models import Book, CoverOperation
+        Book.objects.exists()
+        CoverOperation.objects.exists()
+        checks["database"] = connected
     except DatabaseError:
         pass
     try:
@@ -38,6 +42,11 @@ def ready(request):
             checks["media"] = root.is_dir()
     except OSError:
         pass
+    if settings.PRODUCTION:
+        checks["static"] = (Path(settings.STATIC_ROOT) / "css/catalog.css").is_file()
+    else:
+        from django.contrib.staticfiles import finders
+        checks["static"] = bool(finders.find("css/catalog.css"))
     healthy = all(checks.values())
     if not healthy:
         logger.warning("readiness_failed")

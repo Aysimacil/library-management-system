@@ -119,3 +119,33 @@ class MediaLifecycleTests(TestCase):
         self.assertTrue(Book.objects.filter(pk=pk).exists())
         self.assertTrue((self.root / name).exists())
         self.assertFalse(CoverOperation.objects.exists())
+
+    def test_reconciliation_defaults_to_dry_run_and_protects_shared_references(self):
+        from io import StringIO
+        import os
+        import time
+        from django.core.management import call_command
+
+        book = self.book()
+        live = self.root / book.cover.name
+        orphan = self.root / "covers" / ("a" * 32 + ".jpg")
+        orphan.write_bytes(live.read_bytes())
+        ancient = time.time() - 48 * 3600
+        for path in (live, orphan):
+            os.utime(path, (ancient, ancient))
+        output = StringIO()
+        call_command("reconcile_covers", stdout=output)
+        self.assertTrue(orphan.exists())
+        self.assertIn("1 eligible", output.getvalue())
+        call_command("reconcile_covers", apply=True, stdout=StringIO())
+        self.assertFalse(orphan.exists())
+        self.assertTrue(live.exists())
+
+    def test_a_deleted_cover_cannot_be_referenced_again(self):
+        from django.core.exceptions import ValidationError
+        book = self.book()
+        old = book.cover.name
+        with self.captureOnCommitCallbacks(execute=True):
+            book.delete()
+        with self.assertRaises(ValidationError):
+            Book.objects.create(title="Old reference", cover=old)

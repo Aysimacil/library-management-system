@@ -47,3 +47,10 @@ class HealthTests(TestCase):
         self.assertNotIn("must-never-appear", result)
         self.assertNotIn("never-print", result)
         self.assertEqual(json.loads(result)["exception_type"], "ValueError")
+
+    @override_settings(DATA_UPLOAD_MAX_MEMORY_SIZE=64)
+    def test_oversized_non_file_post_is_rejected(self):
+        from django.contrib.auth import get_user_model
+        response = self.client.post(reverse("accounts:signup"), {"username": "x" * 200})
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(get_user_model().objects.exists())
