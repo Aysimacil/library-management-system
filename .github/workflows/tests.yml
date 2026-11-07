@@ -50,8 +50,13 @@ jobs:
           #!/bin/sh
           exec docker exec "$PG_CONTAINER_ID" pg_dump "$@"
           SH
-          chmod 700 "$RUNNER_TEMP/library-pg-dump"
+          cat > "$RUNNER_TEMP/library-pg-restore" <<'SH'
+          #!/bin/sh
+          exec docker exec -i "$PG_CONTAINER_ID" pg_restore "$@"
+          SH
+          chmod 700 "$RUNNER_TEMP/library-pg-dump" "$RUNNER_TEMP/library-pg-restore"
           echo "PG_DUMP_PATH=$RUNNER_TEMP/library-pg-dump" >> "$GITHUB_ENV"
+          echo "PG_RESTORE_PATH=$RUNNER_TEMP/library-pg-restore" >> "$GITHUB_ENV"
           echo "PG_CONTAINER_ID=$PG_CONTAINER_ID" >> "$GITHUB_ENV"
       - run: python manage.py test --verbosity 2
       - run: python manage.py collectstatic --noinput

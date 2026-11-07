@@ -70,3 +70,33 @@ class PostgreSQLBackupTests(TransactionTestCase):
             self.assertEqual((root / "media" / book.cover.name).read_bytes(), (root / "restored/media" / book.cover.name).read_bytes())
             with self.assertRaises(FileExistsError):
                 create_backup(root / "backup.zip")
+
+            # Exercise pg_restore against a newly created, disposable database.
+            # Never restore over the running test database or configured live DB.
+            import uuid
+            import psycopg
+            from django.conf import settings
+            from psycopg import sql
+            config = connection.settings_dict
+            self.assertTrue(config["NAME"].startswith("test_"))
+            temporary_db = "library_restore_test_" + uuid.uuid4().hex[:12]
+            with connection.cursor() as cursor:
+                cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(temporary_db)))
+            try:
+                command = [settings.PG_RESTORE_PATH, "--no-owner", "--no-acl", "--dbname", temporary_db]
+                for option, key in (("--host", "HOST"), ("--port", "PORT"), ("--username", "USER")):
+                    if config.get(key):
+                        command.extend([option, str(config[key])])
+                env = {**os.environ, "PGPASSWORD": config.get("PASSWORD", ""), "PGSSLMODE": config.get("OPTIONS", {}).get("sslmode", "prefer")}
+                with (root / "restored/database.dump").open("rb") as snapshot:
+                    result = subprocess.run(command, stdin=snapshot, capture_output=True, env=env, timeout=30)
+                self.assertEqual(result.returncode, 0, "pg_restore failed")
+                with psycopg.connect(dbname=temporary_db, host=config["HOST"], port=config["PORT"],
+                                      user=config["USER"], password=config.get("PASSWORD", ""),
+                                      sslmode=env["PGSSLMODE"]) as restored:
+                    with restored.cursor() as cursor:
+                        cursor.execute("SELECT title FROM books_book")
+                        self.assertEqual(cursor.fetchone()[0], "PostgreSQL backup")
+            finally:
+                with connection.cursor() as cursor:
+                    cursor.execute(sql.SQL("DROP DATABASE {}").format(sql.Identifier(temporary_db)))

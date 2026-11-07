@@ -249,3 +249,4 @@ if PRODUCTION:
         validate_email(required("DEFAULT_FROM_EMAIL"))
     except ValidationError:
         raise ImproperlyConfigured("Set a valid production DEFAULT_FROM_EMAIL.") from None
+PG_RESTORE_PATH = os.environ.get("PG_RESTORE_PATH", "pg_restore")
