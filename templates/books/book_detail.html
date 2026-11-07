@@ -2,6 +2,7 @@
 {% block title %}{{ book.title }} · Katalog{% endblock %}
 {% block content %}
 <a class="back-link" href="{% url 'books:list' %}{% querystring %}">← Kitap kataloğu</a>
+{% if user.is_staff and perms.books.view_book %}<p><a class="button secondary" href="{% url 'books:manage-detail' book.pk %}">Kitabı ve kopyaları yönet</a></p>{% endif %}
 <div class="book-detail">
     {% include "books/includes/cover.html" %}
     <div><div class="tag-row">{% for category in book.categories.all %}<a class="tag" href="{% url 'books:list' %}?category={{ category.pk }}">{{ category.name }}</a>{% endfor %}</div>

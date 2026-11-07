@@ -13,6 +13,7 @@
 <a href="{% url 'books:list' %}" {% if request.resolver_match.namespace == 'books' %}aria-current="page"{% endif %}>Katalog</a>
 {% if user.is_authenticated %}
 <a href="{% url 'accounts:profile' %}" {% if request.resolver_match.url_name == 'profile' %}aria-current="page"{% endif %}>Hesabım</a>
+{% if user.is_staff and perms.books.view_book %}<a href="{% url 'books:manage' %}">Katalog Yönetimi</a>{% endif %}
 {% if perms.circulation.issue_loan %}<a href="{% url 'circulation:desk' %}">Teslim masası</a>{% endif %}
 {% if user.is_superuser %}<a href="{% url 'accounts:dashboard' %}">Yönetim</a>{% endif %}
 {% if user.is_staff %}<a href="{% url 'admin:index' %}">Kayıt yönetimi</a>{% endif %}

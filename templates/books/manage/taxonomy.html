@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ heading }} · Katalog Yönetimi{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">Katalog tanımları</p><h1>{{ heading }}</h1><p class="lead">Kitaplarda kullanılacak ortak bilgileri yönetin.</p></div>{% if can_add %}<a class="button" href="{% url 'books:manage-taxonomy-create' kind %}">+ Yeni kayıt</a>{% endif %}</div>
+{% include "books/manage/nav.html" %}
+<form method="get" class="catalog-search"><div class="search-main"><label for="term">Adına göre ara</label><input id="term" name="q" value="{{ q }}" maxlength="200"><button>Ara</button></div></form>
+<section class="panel"><p class="muted">{{ page_obj.paginator.count }} kayıt</p><ul class="record-list">{% for entry in page_obj %}<li><div><strong>{{ entry.name }}</strong><span class="muted">{% if kind == "authors" %}{{ entry.biography|truncatechars:160 }}{% else %}{{ entry.description|truncatechars:160 }}{% endif %}</span></div>{% if can_change %}<a class="button secondary" href="{% url 'books:manage-taxonomy-edit' kind entry.pk %}">Düzenle</a>{% endif %}</li>{% empty %}<li>Gösterilecek kayıt yok.</li>{% endfor %}</ul></section>
+<nav class="pagination" aria-label="Kayıt sayfaları">{% if page_obj.has_previous %}<a href="{% querystring page=page_obj.previous_page_number %}">Önceki</a>{% endif %}<span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="{% querystring page=page_obj.next_page_number %}">Sonraki</a>{% endif %}</nav>
+{% endblock %}

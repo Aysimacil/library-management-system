@@ -181,3 +181,30 @@ td .actions { margin: .2rem; }
     .book-card { transition: box-shadow .15s; }
     .book-card:hover { box-shadow: 0 6px 20px #193e3010; }
 }
+
+/* Staff catalog workspace: shares the public catalog's colors and controls. */
+.management-tabs { display: flex; flex-wrap: wrap; gap: 1.4rem; padding: 0 0 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--line); }
+.management-tabs a { font-weight: 600; font-size: .9rem; }
+.management-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1.25rem; }
+.management-card { display: grid; grid-template-columns: 7rem minmax(0,1fr); gap: 1.3rem; background: white; border: 1px solid var(--line); border-radius: .85rem; padding: 1.4rem; }
+.management-cover { display: block; align-self: start; }
+.management-content { min-width: 0; }
+.management-content h2 { font-size: 1.4rem; }
+.management-content h2 a { text-decoration: none; }
+.management-content p { font-size: .9rem; }
+.management-content .metadata { margin: .9rem 0; }
+.management-content dd { font-size: .85rem; overflow-wrap: anywhere; }
+.management-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.management-layout { display: grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr); gap: 1.5rem; align-items: start; }
+.editor-form { display: grid; gap: 1.3rem; }
+.editor-field { min-width: 0; }
+.editor-field input:not([type=checkbox]), .editor-field textarea, .editor-field select { width: 100%; }
+.editor-field textarea { font: inherit; padding: .8rem; border: 1px solid #b7c2b8; border-radius: .4rem; resize: vertical; min-height: 7rem; max-width: 100%; }
+.choice-field > div { max-height: 14rem; overflow-y: auto; background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; padding: .7rem; }
+.choice-field label { display: flex; align-items: center; gap: .6rem; padding: .3rem; }
+.editor-help p { font-size: .9rem; }
+.narrow-editor { max-width: 45rem; }
+.inventory-summary { display: grid; grid-template-columns: 7rem minmax(0,1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
+.inventory-summary .panel { margin: 0; }
+@media(max-width: 800px) { .management-grid, .management-layout { grid-template-columns: 1fr; } }
+@media(max-width: 420px) { .management-card { grid-template-columns: 4rem minmax(0,1fr); gap: .8rem; padding: 1rem; } .management-content .button { width: 100%; font-size: .85rem; } .inventory-summary { grid-template-columns: 1fr; } .inventory-summary > .management-cover { width: 6rem; } }

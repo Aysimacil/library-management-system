@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}{{ heading }} {% if entry %}düzenle{% else %}ekle{% endif %} · Kütüphane{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'books:manage-taxonomy' kind %}">← Tanımlara dön</a>
+<div class="page-heading"><div><p class="eyebrow">Katalog tanımları</p><h1>{{ heading }} {% if entry %}düzenle{% else %}ekle{% endif %}</h1><p class="lead">{% if entry %}Bu bilgi bağlı kitaplarda da güncellenir.{% else %}Kaydettikten sonra kitap formunda seçebilirsiniz.{% endif %}</p></div></div>
+<form method="post" class="panel editor-form narrow-editor">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<div class="editor-field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}<div class="management-actions"><button>Kaydet</button><a href="{% url 'books:manage-create' %}">Kitap eklemeye dön</a></div></form>
+{% endblock %}

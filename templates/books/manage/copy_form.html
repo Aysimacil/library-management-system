@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}{% if copy %}Rafı düzenle{% else %}Fiziksel kopya ekle{% endif %} · Kütüphane{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'books:manage-detail' book.pk %}">← {{ book.title }}</a>
+<div class="page-heading"><div><p class="eyebrow">Fiziksel envanter</p><h1>{% if copy %}Rafı düzenle{% else %}Fiziksel kopya ekle{% endif %}</h1><p class="lead">{{ book.title }}{% if copy %} · {{ copy.inventory_code }}{% endif %}</p></div></div>
+<div class="management-layout"><form method="post" class="panel editor-form">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<div class="editor-field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}<div class="management-actions"><button>{% if copy %}Rafı kaydet{% else %}Kopyayı ekle{% endif %}</button><a href="{% url 'books:manage-detail' book.pk %}">Vazgeç</a></div></form>
+<aside class="panel editor-help"><h2>Her kopyanın kendi kaydı var</h2><p>Demirbaş kodu tüm katalogda benzersizdir. Raf bilgisi daha sonra güncellenebilir.</p><p class="muted">Kitap ilişkisi ve kopya kimliği bu ekrandan değiştirilmez. Yeni kopyalar ödünç verilebilir durumda oluşturulur; teslim ve iade için personel masasını kullanın.</p></aside></div>
+{% endblock %}

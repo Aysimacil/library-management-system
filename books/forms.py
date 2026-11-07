@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Author, Category
+from .models import Author, Book, BookCopy, Category
 
 
 class CatalogFilterForm(forms.Form):
@@ -22,3 +22,40 @@ class CatalogFilterForm(forms.Form):
         if start and end and start > end:
             self.add_error("year_to", "Son yıl ilk yıldan önce olamaz.")
         return data
+
+
+class BookManagementForm(forms.ModelForm):
+    class Meta:
+        model = Book
+        fields = ["title", "isbn", "authors", "categories", "publication_year", "description", "cover"]
+        widgets = {
+            "authors": forms.CheckboxSelectMultiple,
+            "categories": forms.CheckboxSelectMultiple,
+            "description": forms.Textarea(attrs={"rows": 5}),
+        }
+
+
+class CopyManagementForm(forms.ModelForm):
+    class Meta:
+        model = BookCopy
+        fields = ["inventory_code", "shelf_location"]
+
+
+class ShelfManagementForm(forms.ModelForm):
+    class Meta:
+        model = BookCopy
+        fields = ["shelf_location"]
+
+
+class AuthorManagementForm(forms.ModelForm):
+    class Meta:
+        model = Author
+        fields = ["name", "biography"]
+        widgets = {"biography": forms.Textarea(attrs={"rows": 4})}
+
+
+class CategoryManagementForm(forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = ["name", "description"]
+        widgets = {"description": forms.Textarea(attrs={"rows": 4})}
