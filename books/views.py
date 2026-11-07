@@ -38,6 +38,9 @@ class BookList(ListView):
         if term:
             folded = term.translate(str.maketrans(TURKISH_CAPITALS)).lower()
             matching_codes = BookCopy.objects.filter(book_id=OuterRef('pk'), inventory_code__icontains=term)
+            matching_categories = Category.objects.filter(books=OuterRef('pk')).alias(
+                search_name=searchable_text("name"),
+            ).filter(search_name__contains=folded)
             books = books.alias(
                 search_title=searchable_text("title"),
                 search_author=searchable_text("authors__name"),
@@ -46,6 +49,7 @@ class BookList(ListView):
                 | Q(search_author__contains=folded)
                 | Q(isbn__icontains=term)
                 | Exists(matching_codes)
+                | Exists(matching_categories)
             )
         if params.get("category"):
             books = books.filter(categories=params["category"])
