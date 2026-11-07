@@ -133,7 +133,13 @@ elif DB_ENGINE == "postgresql":
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
         "HOST": os.environ.get("DB_HOST", "localhost"),
         "PORT": os.environ.get("DB_PORT", "5432"),
-        "OPTIONS": {"sslmode": os.environ.get("DB_SSLMODE", "require" if PRODUCTION else "prefer")},
+        "CONN_MAX_AGE": 60 if PRODUCTION else 0,
+        "CONN_HEALTH_CHECKS": True,
+        "OPTIONS": {
+            "sslmode": os.environ.get("DB_SSLMODE", "require" if PRODUCTION else "prefer"),
+            "connect_timeout": 5,
+            **({"sslrootcert": os.environ["DB_SSLROOTCERT"]} if os.environ.get("DB_SSLROOTCERT") else {}),
+        },
     }}
 else:
     raise ImproperlyConfigured("DB_ENGINE must be sqlite or postgresql.")
@@ -209,4 +215,23 @@ LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "gemini")
 LLM_MODEL = os.environ.get("LLM_MODEL", "gemini-3.5-flash-lite")
 LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
 
-MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", str(BASE_DIR / "media")))
+MEDIA_ROOT = Path(required("MEDIA_ROOT") if PRODUCTION else os.environ.get("MEDIA_ROOT", str(BASE_DIR / "media")))
+if PRODUCTION and (not MEDIA_ROOT.is_absolute() or MEDIA_ROOT.resolve().is_relative_to(BASE_DIR.resolve())):
+    raise ImproperlyConfigured("Production MEDIA_ROOT must be absolute and outside the release directory.")
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+MEDIA_PROBE_ON_READINESS = boolean("MEDIA_PROBE_ON_READINESS", True)
+STATIC_ROOT = Path(os.environ.get("STATIC_ROOT", str(STATIC_ROOT)))
+if MEDIA_ROOT.resolve() == STATIC_ROOT.resolve() or MEDIA_ROOT.resolve().is_relative_to(STATIC_ROOT.resolve()) or STATIC_ROOT.resolve().is_relative_to(MEDIA_ROOT.resolve()):
+    raise ImproperlyConfigured("MEDIA_ROOT and STATIC_ROOT must be separate directories.")
+
+LOGGING = {
+    "version": 1, "disable_existing_loggers": False,
+    "formatters": {"safe": {"()": "library_system.observability.SafeJSONFormatter"}},
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "safe"}},
+    "root": {"handlers": ["console"], "level": "INFO"},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+    },
+}
+PG_DUMP_PATH = os.environ.get("PG_DUMP_PATH", "pg_dump")

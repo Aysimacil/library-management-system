@@ -28,7 +28,8 @@ class CatalogEnhancementTests(TestCase):
         self.addCleanup(self.settings_override.disable)
 
     def test_cover_sanitized_stored_with_generated_name_and_served_as_image(self):
-        book = Book.objects.create(title="Kapaklı", cover=upload("../../bad.png"))
+        with self.captureOnCommitCallbacks(execute=True):
+            book = Book.objects.create(title="Kapaklı", cover=upload("../../bad.png"))
         self.assertTrue(book.cover.name.startswith("covers/"))
         self.assertNotIn("bad", book.cover.name)
         with Image.open(book.cover.path) as saved:
@@ -72,3 +73,16 @@ class CatalogEnhancementTests(TestCase):
         book = Book.objects.create(title="Kapaksız")
         self.assertEqual(self.client.get(reverse("books:cover", args=[book.pk])).status_code, 404)
         self.assertEqual(self.client.post(reverse("books:cover", args=[book.pk])).status_code, 405)
+
+    def test_exif_removed_and_fake_raster_rejected(self):
+        buffer = BytesIO()
+        metadata = Image.Exif()
+        metadata[315] = "private metadata"
+        Image.new("RGB", (30, 40)).save(buffer, "JPEG", exif=metadata)
+        file = SimpleUploadedFile("photo.jpg", buffer.getvalue(), content_type="image/jpeg")
+        with self.captureOnCommitCallbacks(execute=True):
+            book = Book.objects.create(title="Metadata test", cover=file)
+        with Image.open(book.cover.path) as cleaned:
+            self.assertFalse(cleaned.getexif())
+        with self.assertRaises(ValidationError):
+            Book.objects.create(title="Fake", cover=SimpleUploadedFile("photo.jpg", b"%PDF-1.5 fake", content_type="image/jpeg"))

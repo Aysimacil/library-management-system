@@ -1,5 +1,6 @@
 from django.db.models import Count, Exists, F, OuterRef, Q
 from django.http import FileResponse, Http404
+from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
 from django.views.decorators.http import require_safe
@@ -88,10 +89,19 @@ def cover(request, pk):
     book = get_object_or_404(Book, pk=pk)
     if not book.cover:
         raise Http404
-    try:
-        stream = book.cover.open("rb")
-    except OSError:
-        raise Http404 from None
+    from .models import CoverOperation
+    pending = CoverOperation.objects.filter(name=book.cover.name, kind="WRITE").first()
+    if pending is not None:
+        stream = ContentFile(bytes(pending.content))
+    else:
+        try:
+            stream = book.cover.open("rb")
+        except OSError:
+            # The commit callback may have published between the two reads.
+            pending = CoverOperation.objects.filter(name=book.cover.name, kind="WRITE").first()
+            if pending is None:
+                raise Http404 from None
+            stream = ContentFile(bytes(pending.content))
     response = FileResponse(stream, content_type="image/jpeg")
     response["X-Content-Type-Options"] = "nosniff"
     response["Cache-Control"] = "public, max-age=3600"

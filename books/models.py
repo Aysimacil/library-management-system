@@ -1,5 +1,5 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
+from django.db import models, router, transaction
 from django.db.models import Q
 
 from .validators import validate_isbn
@@ -66,11 +66,41 @@ class Book(models.Model):
             ),
         ]
 
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        if "cover" in field_names:
+            instance._original_cover = instance.cover.name
+        return instance
+
+    def refresh_from_db(self, using=None, fields=None, from_queryset=None):
+        super().refresh_from_db(using=using, fields=fields, from_queryset=from_queryset)
+        if fields is None or "cover" in fields:
+            self._original_cover = self.cover.name
+
     def save(self, *args, **kwargs):
-        if self.cover and not self.cover._committed:
-            cleaned = prepare_cover(self.cover)
-            self.cover.save(cleaned.name, cleaned, save=False)
-        return super().save(*args, **kwargs)
+        from .media_lifecycle import enqueue_delete, flush_safely, media_lock
+        using = kwargs.get("using") or router.db_for_write(type(self), instance=self)
+        fields = kwargs.get("update_fields")
+        if fields is not None and "cover" not in fields:
+            return super().save(*args, **kwargs)
+        with media_lock(using):
+            previous = type(self).objects.using(using).filter(pk=self.pk).values_list("cover", flat=True).first() if self.pk else ""
+            content = None
+            original = getattr(self, "_original_cover", None)
+            if self.cover._committed and original is not None and self.cover.name == original and previous != original:
+                self.cover = previous or ""
+            if self.cover and not self.cover._committed:
+                content = prepare_cover(self.cover).read()
+                self.cover = cover_path(self, "")
+            super().save(*args, **kwargs)
+            self._original_cover = self.cover.name
+            if content is not None:
+                CoverOperation.objects.using(using).create(name=self.cover.name, kind="WRITE", content=content)
+                transaction.on_commit(lambda: flush_safely(using), using=using)
+            if previous and previous != self.cover.name:
+                enqueue_delete(previous, using)
+        return None
 
     @property
     def available_copy_count(self):
@@ -112,3 +142,24 @@ class BookCopy(models.Model):
 
     def __str__(self):
         return f"{self.inventory_code} — {self.book.title}"
+
+
+class MediaLock(models.Model):
+    """Serializes supported cover-reference writes, publishing and backup."""
+    version = models.PositiveBigIntegerField(default=0)
+
+
+class CoverOperation(models.Model):
+    class Kind(models.TextChoices):
+        WRITE = "WRITE"
+        DELETE = "DELETE"
+
+    name = models.CharField(max_length=255)
+    kind = models.CharField(max_length=6, choices=Kind.choices)
+    content = models.BinaryField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["name", "kind"], name="unique_cover_operation"),
+        ]
