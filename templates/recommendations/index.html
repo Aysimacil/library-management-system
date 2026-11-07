@@ -1,7 +1,29 @@
-{% extends "base.html" %}{% block content %}<h1>Kitap önerileri</h1>
-<form class="stack" method="post">{% csrf_token %}{{ form.as_p }}<button>Öneri al</button></form>
-{% if results != None %}<ul class="catalog">{% for book,summary in results %}<li>
-<h2><a href="{% url 'books:detail' book.pk %}">{{ book.title }}</a></h2>
-{% if summary %}<p>{{ summary }}</p>{% endif %}<p>{{ book.available_copy_count }} müsait kopya</p></li>
-{% empty %}<li>İsteğinizle eşleşen bir katalog önerisi bulunamadı.</li>{% endfor %}</ul>{% endif %}
-<a href="{% url 'books:list' %}">Katalogda ara</a>{% endblock %}
+{% extends "base.html" %}{% block title %}Sana uygun kitaplar · Kütüphane{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">Okuma keşfi</p><h1>Sana uygun bir kitap.</h1><p class="lead">Bir konu söyle; koleksiyondaki seçenekleri birlikte daraltalım.</p></div></div>
+<div class="recommendation-layout">
+<section class="panel">
+    <h2>Ne okumak istersin?</h2>
+    <form class="stack recommendation-form" method="post" data-loading-form>{% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}<div class="field {% if field.name == 'available_only' %}checkbox-field{% endif %}">
+        {% if field.name == 'available_only' %}<label class="checkbox">{{ field }} {{ field.label }}</label>{% else %}{{ field.label_tag }}{{ field }}{% endif %}
+        {% if field.help_text %}<p class="helptext" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</p>{% endif %}{{ field.errors }}</div>{% endfor %}
+        <button data-idle-text="Öneri al" data-busy-text="Öneriler hazırlanıyor…">Öneri al</button><p class="loading-status muted" aria-live="polite"></p>
+    </form>
+    <p class="privacy-note">Serbest metnin ve hesap bilgilerin paylaşılmaz. Yalnız katalogla eşleşen konular, seçtiğin okuma düzeyi ve aday kitap bilgileri değerlendirilir.</p>
+</section>
+<section aria-label="Öneri sonuçları">
+{% if results != None %}
+    <div class="section-heading"><h2>Senin için seçilenler</h2><span class="tag">Yapay zekâ önerisi</span></div>
+    <div class="recommendation-results">{% for book,summary in results %}
+    <article class="loan-card">{% include "books/includes/cover.html" %}<div>
+        <h2><a href="{% url 'books:detail' book.pk %}">{{ book.title }}</a></h2>
+        {% if summary %}<p>{{ summary }}</p>{% else %}<p class="muted">Bu kitap için katalog açıklaması bulunmuyor.</p>{% endif %}
+        <p class="stock in-stock">{{ book.available_copy_count }} müsait kopya</p>
+        <a href="{% url 'books:detail' book.pk %}">Kitabı incele →</a>
+    </div></article>{% empty %}<div class="empty-state"><h2>Eşleşen öneri bulunamadı</h2><p>Daha kısa bir konu yazabilir veya farklı bir kategori seçebilirsin.</p></div>{% endfor %}</div>
+{% else %}<div class="empty-state recommendation-welcome"><h2>Bir konudan başlayalım.</h2><p>Tür, yazar veya merak ettiğin bir konu yaz. Örneğin “astronomi” ya da “tarih romanı”.</p></div>{% endif %}
+    <p class="muted"><a href="{% url 'books:list' %}">Katalogda kendin ara →</a></p>
+</section>
+</div>{% endblock %}
