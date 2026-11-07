@@ -15,7 +15,7 @@ from django.db import connection
 from django.db.migrations.recorder import MigrationRecorder
 from django.utils import timezone
 
-from .media_lifecycle import MANAGED_NAME, media_lock
+from .media_lifecycle import MANAGED_NAME, media_lock, media_volume_ready
 
 
 def database_dump(path):
@@ -54,7 +54,7 @@ def create_backup(destination):
     root = Path(settings.MEDIA_ROOT).resolve()
     if not destination.is_absolute() or destination.resolve().is_relative_to(root) or destination.resolve().is_relative_to(Path(settings.BASE_DIR).resolve()):
         raise ValueError("Choose an absolute backup destination outside MEDIA_ROOT and the release directory.")
-    if not root.is_dir():
+    if not media_volume_ready():
         raise ValueError("MEDIA_ROOT is missing.")
     # Reference changes, file publishing and deletion use this same lock.
     with media_lock(), tempfile.TemporaryDirectory(prefix="library-backup-") as work:

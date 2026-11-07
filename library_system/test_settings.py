@@ -20,7 +20,7 @@ class EnvironmentTests(TestCase):
     def production(self):
         return dict(DJANGO_ENV="production", SECRET_KEY=secrets.token_urlsafe(64),
                     ALLOWED_HOSTS="library.example.test", DB_NAME="library", DB_USER="library",
-                    SMTP_HOST="smtp.example.test", MEDIA_ROOT="/srv/library-test-media", DEFAULT_FROM_EMAIL="library@example.test")
+                    SMTP_HOST="smtp.example.test", MEDIA_ROOT="/srv/library-test-media", DEFAULT_FROM_EMAIL="library@example.test", MEDIA_VOLUME_ID="test-volume")
 
     def test_local_profile(self):
         result = self.run_django(["shell", "-c", """

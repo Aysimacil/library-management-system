@@ -4,7 +4,7 @@ import time
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from books.media_lifecycle import MANAGED_NAME, media_lock
+from books.media_lifecycle import MANAGED_NAME, media_lock, media_volume_ready
 from books.models import Book, CoverOperation
 
 
@@ -21,6 +21,8 @@ class Command(BaseCommand):
         cutoff = time.time() - options["older_than_hours"] * 3600
         count = 0
         with media_lock():
+            if not media_volume_ready():
+                raise CommandError("Media volume unavailable.")
             root = Path(settings.MEDIA_ROOT).resolve()
             covers = root / "covers"
             if covers.is_symlink():

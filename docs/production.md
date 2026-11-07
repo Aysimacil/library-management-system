@@ -17,11 +17,20 @@ Dağıtım alan adını ve bu yolları hedef sunucuya göre uyarlayın.
 ```bash
 install -d -o library -g www-data -m 0750 /srv/library/media /srv/library/tmp
 install -d -o library -g www-data -m 0750 /srv/library/static
+# Only after verifying the intended persistent volume is mounted:
+printf '%s' library-covers > /srv/library/media/.library-volume
+chown library:www-data /srv/library/media/.library-volume
+chmod 0640 /srv/library/media/.library-volume
 ```
 
 - `MEDIA_ROOT` üretimde zorunlu, mutlak ve release dizininin dışında olmalıdır.
   Bir sunucuda kalıcı yerel disk, çok uygulama sunucusunda tüm süreçlerin aynı
   veriyi gördüğü kalıcı ortak dosya sistemi kullanın. Geçici container diski uygun değildir.
+- `MEDIA_VOLUME_ID` üretimde zorunludur. Kalıcı kökteki `.library-volume`
+  işaretçisi bu değeri taşımalıdır. Eksik/yanlış volume'de yazma, silme, yedek
+  ve readiness durur; commit edilmiş yeni içerik yeniden deneme kuyruğunda kalır.
+  İşaretçiyi her yeniden başlatmada oluşturmayın; yalnız doğru diski ilk
+  hazırlarken veya doğrulanmış restore'dan sonra koyun.
 - Statik kök `STATIC_ROOT`, medya köküyle kesişemez. Kapaklar Django'nun
   kitap-ID rotasından sunulur; Nginx'in `/media/` rotası dosyaları doğrudan açmaz.
 - `FILE_UPLOAD_TEMP_DIR` yalnız uygulamanın yazabildiği geçici yükleme alanıdır.
@@ -95,7 +104,7 @@ Doğrulamadan sonra ayrı bir geri dönüş provası yapın:
 2. PostgreSQL için yeni boş bir prova DB oluşturun ve örneğin
    `pg_restore --no-owner --no-acl --dbname library_restore database.dump`
    çalıştırın. Bağlantı sırlarını PGPASSFILE veya sır yönetiminden verin.
-3. Aynı uygulama sürümüyle `migrate --plan`, sağlık ve katalog testlerini çalıştırın.
+3. Restore medya köküne doğru volume işaretçisini kurun. Aynı uygulama sürümüyle `migrate --plan`, sağlık ve katalog testlerini çalıştırın.
    `process_cover_operations` ile bekleyen dosyaları tekrar yayınlayın.
 4. Kopya, ödünç, ceza ve kapakları karşılaştırın. Canlı cutover için yazmaları
    durdurun, son yedeği alın ve doğrulanmış DB/medya çiftini birlikte etkinleştirin.

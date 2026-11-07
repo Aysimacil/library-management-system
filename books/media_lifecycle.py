@@ -30,8 +30,27 @@ def enqueue_delete(name, using):
         transaction.on_commit(lambda: flush_safely(using), using=using)
 
 
+def media_volume_ready():
+    root = Path(settings.MEDIA_ROOT)
+    expected = settings.MEDIA_VOLUME_ID
+    if not root.is_dir():
+        return False
+    if not expected:
+        return not settings.PRODUCTION
+    marker = root / ".library-volume"
+    try:
+        if marker.is_symlink() or not marker.is_file():
+            return False
+        with marker.open("r") as stream:
+            return stream.read(129).strip() == expected
+    except OSError:
+        return False
+
+
 def publish(name, data):
     root = Path(settings.MEDIA_ROOT).resolve()
+    if settings.PRODUCTION and not media_volume_ready():
+        raise OSError("Media volume unavailable")
     target = root / name
     target.parent.mkdir(parents=True, exist_ok=True)
     # Unique filenames are application-generated. Never traverse a symlink.
@@ -66,6 +85,8 @@ def flush_media(using="default", limit=100):
             if operation.kind == "WRITE" and referenced:
                 publish(operation.name, bytes(operation.content))
             elif operation.kind == "DELETE" and not referenced:
+                if settings.PRODUCTION and not media_volume_ready():
+                    raise OSError("Media volume unavailable")
                 target = Path(settings.MEDIA_ROOT).resolve() / operation.name
                 if target.parent.resolve() != Path(settings.MEDIA_ROOT).resolve() / "covers":
                     raise OSError("Unsafe media destination")

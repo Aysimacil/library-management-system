@@ -222,6 +222,9 @@ LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
 MEDIA_ROOT = Path(required("MEDIA_ROOT") if PRODUCTION else os.environ.get("MEDIA_ROOT", str(BASE_DIR / "media")))
 if PRODUCTION and (not MEDIA_ROOT.is_absolute() or MEDIA_ROOT.resolve().is_relative_to(BASE_DIR.resolve())):
     raise ImproperlyConfigured("Production MEDIA_ROOT must be absolute and outside the release directory.")
+MEDIA_VOLUME_ID = required("MEDIA_VOLUME_ID") if PRODUCTION else os.environ.get("MEDIA_VOLUME_ID", "")
+if MEDIA_VOLUME_ID and (len(MEDIA_VOLUME_ID) > 64 or not all(c.isascii() and (c.isalnum() or c in "-_") for c in MEDIA_VOLUME_ID)):
+    raise ImproperlyConfigured("MEDIA_VOLUME_ID must be a short alphanumeric identifier.")
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
 MEDIA_PROBE_ON_READINESS = boolean("MEDIA_PROBE_ON_READINESS", True)

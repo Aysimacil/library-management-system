@@ -31,7 +31,10 @@ def ready(request):
     except DatabaseError:
         pass
     try:
+        from books.media_lifecycle import media_volume_ready
         root = Path(settings.MEDIA_ROOT)
+        if not media_volume_ready():
+            raise OSError("Media volume unavailable")
         if settings.MEDIA_PROBE_ON_READINESS:
             with tempfile.TemporaryFile(dir=root) as stream:
                 stream.write(b"health")

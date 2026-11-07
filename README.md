@@ -92,7 +92,7 @@ bağlantısını doğrulamaz. Anahtar ve model erişimi hedef hesapta ayrıca de
 
 ## Üretime hazırlık
 
-Üretimde mutlak ve release dışındaki `MEDIA_ROOT`, ayrıca
+Üretimde mutlak ve release dışındaki `MEDIA_ROOT`, doğrulanan `MEDIA_VOLUME_ID` işaretçisi ve
 `DEFAULT_FROM_EMAIL` zorunludur. Dağıtım dosyaları `deploy/` altındadır.
 Gunicorn, HTTPS Nginx proxy'si, kalıcı medya alanı ve kuyruk timer'ı için
 [üretim ve geri yükleme yönergesini](docs/production.md) izleyin.

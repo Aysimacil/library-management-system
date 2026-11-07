@@ -149,3 +149,17 @@ class MediaLifecycleTests(TestCase):
             book.delete()
         with self.assertRaises(ValidationError):
             Book.objects.create(title="Old reference", cover=old)
+
+    @override_settings(PRODUCTION=True, MEDIA_VOLUME_ID="correct-volume")
+    def test_missing_or_wrong_volume_preserves_pending_data(self):
+        with self.assertLogs("library.media"):
+            book = self.book()
+        self.assertTrue(CoverOperation.objects.filter(kind="WRITE").exists())
+        marker = self.root / ".library-volume"
+        marker.write_text("wrong-volume")
+        with self.assertRaises(OSError):
+            flush_media()
+        self.assertFalse((self.root / book.cover.name).exists())
+        marker.write_text("correct-volume")
+        flush_media()
+        self.assertTrue((self.root / book.cover.name).exists())
