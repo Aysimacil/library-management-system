@@ -13,3 +13,14 @@ Geçişten önce yedek alın ve geri yüklemeyi ayrı DB'de deneyin. Önce `show
 3. `python manage.py test` tüm modülleri ve üretim profilinin ayrı süreçlerde başlangıcını doğrular. Sağlayıcı testlerinde HTTPS istemcisi taklit edilir.
 4. Demo kurulumunda üye olarak kitap talep edin; personel olarak üye adı ve demirbaş koduyla teslimi onaylayın. Üye panelindeki son günü ve katalogdaki müsaitliği karşılaştırın. İadeden sonra stok geri gelmelidir.
 5. Öneri anahtarını yalnız dağıtım ortamına tanımlayın. Canlı servis denemesini kişisel veri içermeyen sorgu ve harcama sınırlarıyla ayrıca gerçekleştirin.
+
+## 7 Kasım 2026 doğrulama kaydı
+
+Python 3.12.14 / Django 6.1.2 ile ayrı sanal ortamda requirements kurulumu,
+temiz SQLite migration'ı, 59 test (PostgreSQL'e özel 3 test atlandı) ve
+collectstatic (133 dosya) başarılı. Gerçek PostgreSQL 18.6 üzerinde 59 testin
+tamamı geçti. Örnek veri iki kez yüklenince 5 kopya ve 2 ödünç kaydı korundu.
+
+Üretim başlangıç profili HSTS kurulumu için W004 uyarısı veriyor. TLS doğrulanmış
+profil değerleriyle check --deploy --fail-level WARNING başarılı. Canlı HTTPS,
+SMTP teslimi ve Gemini hesabı doğrulanmadı.

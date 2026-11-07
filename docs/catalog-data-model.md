@@ -22,17 +22,12 @@ Mevcut `books` uygulaması korunmuştur; README'deki `catalog` adı hedef yapı 
 
 ## Diğer ekip üyeleriyle bağlantı
 
-- Üçüncü ekip üyesinin `Loan` modeli kitap başlığı yerine `books.BookCopy` modeline bağlanmalıdır. Geçmişi korumak için bu ilişkide `on_delete=PROTECT` kullanılmalıdır.
-- Ödünç/iade servisi `BookCopy.status` alanını ödünç kaydıyla aynı atomik işlemde güncellemelidir. Alanın katalog formlarında kapalı olması tek başına eşzamanlılık güvencesi sağlamaz; kilitleme ve aktif ödünç benzersizliği dolaşım aşamasında uygulanacaktır.
-- Kullanıcı modeli veya rol yapısı bu paket tarafından değiştirilmez. Yönetim paneli Django'nun mevcut model izinlerini kullanır.
-- Ortak PostgreSQL bağlantısı hazır olduğunda aynı kontroller ekip ortamında tekrar çalıştırılabilir.
-
-## Bu aşamanın kapsamı
-
-Veri modeli, ilk migration, model testleri ve Django Admin yönetimi uygulanmıştır.
-Katalog listesi, detay, arama ve müsaitlik filtreleri uygulanmıştır. Ödünç/iade, ceza ve LLM sonraki aşamalardır.
-`Model.save()` otomatik `full_clean()` çağırmaz; programatik veri girişinde
-model doğrulaması ayrıca çalıştırılmalıdır.
+`Loan.copy`, `BookCopy.pk` kaydına PROTECT ilişkisiyle bağlanır.
+Dolaşım servisi kopyayı kilitleyip ödünç ve durum değişikliklerini atomik kaydeder.
+Geçmişi olan kopyanın kitabını değiştirmek yeni veritabanı tetikleyicisiyle engellenir.
+Admin, metadata değiştirirken yalnız ilgili alanları yazar. Eşzamanlı raf değişimi
+ve teslim PostgreSQL üzerinde test edilir. Katalog, üyelik, teslim/iade, ceza ve
+öneri modüllerinin güncel kapsamı [ana README](../README.md) içindedir.
 
 ## Yönetim paneli
 
