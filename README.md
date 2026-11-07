@@ -1,13 +1,13 @@
 # Kütüphane Yönetim Sistemi
 
-Katalog, üyelik, fiziksel teslim, iade, uzatma ve gecikme cezası işlemlerini tek Django uygulamasında birleştiren ders projesi. Bu README `feature/library-ui-enhancements` sürümünü anlatır.
+Katalog, üyelik, fiziksel teslim, iade, uzatma ve gecikme cezası işlemlerini tek Django uygulamasında birleştiren ders projesi. Bu README `feature/library-production-readiness` sürümünü anlatır.
 
 ## Yerel kurulum
 
 Python 3.12, Django 6.1.2 ve Django Templates kullanılır. Varsayılan yerel veritabanı SQLite'tır. Eşzamanlı personel işlemleri için PostgreSQL kullanın.
 
 ```bash
-git clone --branch feature/library-ui-enhancements https://github.com/Aysimacil/library-management-system.git
+git clone --branch feature/library-production-readiness https://github.com/Aysimacil/library-management-system.git
 cd library-management-system
 python3.12 -m venv .venv
 source .venv/bin/activate
@@ -81,11 +81,30 @@ SVG ve harici kapak URL'si kabul edilmez. Dosyalar `MEDIA_ROOT` altında tutulur
 (varsayılan `media/`); bu klasör Git dışında ve çalıştırma yetkisi olmayan kalıcı
 depolamada olmalıdır. Kapaklar `/kapak/<kitap-id>/` üzerinden JPEG ve nosniff
 başlıklarıyla sunulur. Eksik kapakta başlığı içeren yer tutucu görünür.
-Değiştirilen eski kapak dosyaları otomatik silinmez; medya yedeği ve artık dosya
-temizliği dağıtımın saklama politikasına göre yönetilmelidir.
+Kapak yazma ve eski dosya temizliği commit sonrasında kalıcı kuyrukla yürütülür.
+Paylaşılan kapaklar korunur; başarısız dosya işlemleri yeniden denenebilir.
 
 Öneri ekranında kategori, hariç tutulan kategori, müsaitlik ve okuma düzeyi seçilebilir.
 Yerel puanlama başlık, yazar, kategori ve açıklama eşleşmelerini sıralar. Sağlayıcıya
 yalnız katalogda bulunan kavramlar, seçimler ve adayların eşleşme puanı gider;
 serbest girdi ve hesap bilgileri paylaşılmaz. Taklit API testleri canlı Gemini
 bağlantısını doğrulamaz. Anahtar ve model erişimi hedef hesapta ayrıca denenmelidir.
+
+## Üretime hazırlık
+
+Üretimde mutlak ve release dışındaki `MEDIA_ROOT`, ayrıca
+`DEFAULT_FROM_EMAIL` zorunludur. Dağıtım dosyaları `deploy/` altındadır.
+Gunicorn, HTTPS Nginx proxy'si, kalıcı medya alanı ve kuyruk timer'ı için
+[üretim ve geri yükleme yönergesini](docs/production.md) izleyin.
+
+```bash
+python manage.py process_cover_operations
+python manage.py reconcile_covers
+python manage.py backup_library --output /srv/backups/library.zip
+python manage.py restore_library_backup --archive /srv/backups/library.zip --target /srv/restore/prova
+python manage.py smoke_gemini
+```
+
+Son komut anahtar veya --live izni olmadan SKIPPED döndürür. Sağlık rotaları
+`/health/live/` ve `/health/ready/` şeklindedir. Canlı sunucu, HTTPS sertifikası,
+SMTP ve gerçek Gemini teslimi kendi hedef ortamlarında ayrıca doğrulanmalıdır.
