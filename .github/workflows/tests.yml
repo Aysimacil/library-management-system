@@ -1,7 +1,7 @@
 name: Library checks
 on:
   push:
-    branches: [feature/library-integration-mvp, feature/library-ui-enhancements, main]
+    branches: [feature/library-integration-mvp, feature/library-ui-enhancements, feature/library-production-readiness, main]
   pull_request:
     branches: [main]
 
@@ -23,7 +23,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
         ports: ['127.0.0.1:5432:5432']
         options: >-
-          --health-cmd pg_isready --health-interval 5s --health-timeout 3s --health-retries 10
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       DJANGO_ENV: development
       DB_ENGINE: ${{ matrix.engine }}
@@ -42,4 +42,19 @@ jobs:
       - run: python manage.py migrate --noinput
       - run: python manage.py seed_library_demo
       - run: python manage.py seed_library_demo
+      - name: Use the matching PostgreSQL client from the isolated CI container
+        env:
+          PG_CONTAINER_ID: ${{ job.services.postgres.id }}
+        run: |
+          cat > "$RUNNER_TEMP/library-pg-dump" <<'SH'
+          #!/bin/sh
+          exec docker exec "$PG_CONTAINER_ID" pg_dump "$@"
+          SH
+          chmod 700 "$RUNNER_TEMP/library-pg-dump"
+          echo "PG_DUMP_PATH=$RUNNER_TEMP/library-pg-dump" >> "$GITHUB_ENV"
+          echo "PG_CONTAINER_ID=$PG_CONTAINER_ID" >> "$GITHUB_ENV"
       - run: python manage.py test --verbosity 2
+      - run: python manage.py collectstatic --noinput
+      - run: python manage.py smoke_gemini
+        env:
+          LLM_API_KEY: ""

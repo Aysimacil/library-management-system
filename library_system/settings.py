@@ -235,3 +235,4 @@ LOGGING = {
     },
 }
 PG_DUMP_PATH = os.environ.get("PG_DUMP_PATH", "pg_dump")
+FILE_UPLOAD_TEMP_DIR = os.environ.get("FILE_UPLOAD_TEMP_DIR") or None
