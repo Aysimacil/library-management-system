@@ -1,5 +1,4 @@
-from django.db.models import Count, Exists, F, OuterRef, Q, Value
-from django.db.models.functions import Lower, Replace
+from django.db.models import Count, Exists, F, OuterRef, Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
@@ -10,15 +9,7 @@ from django.views.generic import DetailView, ListView
 from .models import Book, BookCopy, Category
 
 
-# SQLite's LOWER handles ASCII only; map Turkish capitals before folding ASCII.
-TURKISH_CAPITALS = dict(zip("IİÇĞÖŞÜ", "ıiçğöşü"))
-
-
-def searchable_text(field):
-    expression = F(field)
-    for upper, lower in TURKISH_CAPITALS.items():
-        expression = Replace(expression, Value(upper), Value(lower))
-    return Lower(expression)
+from .search import TURKISH_CAPITALS, searchable_text
 
 
 def catalog_books():

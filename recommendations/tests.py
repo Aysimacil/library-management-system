@@ -77,3 +77,39 @@ class RecommendationTests(TestCase):
 
     def test_anonymous_user_redirected(self):
         self.assertEqual(self.client.get(reverse("recommendations:index")).status_code, 302)
+
+    @patch("recommendations.services.fetch_suggestions")
+    def test_safe_topics_and_preferences_guide_provider(self, provider):
+        from books.models import Category
+        topic = Category.objects.create(name="Astronomi")
+        self.book.categories.add(topic)
+        provider.return_value = [{"id": self.book.pk, "summary": "Yıldızları tanımak için uygun."}]
+        results = recommend(self.user, "Bana ASTRONOMİ hakkında bir kitap öner gizliözelbilgi",
+                            category=topic, available_only=True, reading_level="introductory")
+        self.assertEqual(results[0][0].pk, self.book.pk)
+        preferences = provider.call_args.kwargs["preferences"]
+        self.assertEqual(preferences["reading_level"], "introductory")
+        self.assertIn("Astronomi", preferences["catalog_topics"])
+        self.assertNotIn("gizliözelbilgi", json.dumps(provider.call_args.args))
+        self.assertNotIn("gizliözelbilgi", json.dumps(preferences))
+        self.assertEqual(preferences["category"], topic.name)
+
+    def test_ranking_exclusions_and_stock_happen_before_provider(self):
+        from books.models import Category
+        from .services import candidate_books
+        target = Book.objects.create(title="Astronomi rehberi")
+        excluded = Category.objects.create(name="Ders kitabı")
+        target.categories.add(excluded)
+        candidates, _ = candidate_books("astronomi")
+        self.assertEqual(candidates[0].pk, target.pk)
+        candidates, _ = candidate_books("astronomi", excluded_category=excluded, available_only=True)
+        self.assertEqual([b.pk for b in candidates], [self.book.pk])
+
+    @patch("recommendations.services.fetch_suggestions")
+    def test_unknown_query_and_invalid_filter_do_not_spend_quota(self, provider):
+        self.assertEqual(recommend(self.user, "olmayanbirbaşlık"), [])
+        self.assertFalse(UsageWindow.objects.exists())
+        provider.assert_not_called()
+        self.client.force_login(self.user)
+        page = self.client.post(reverse("recommendations:index"), {"query": "astronomi", "category": "999999"})
+        self.assertTrue(page.context["form"].errors)
