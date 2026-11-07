@@ -161,3 +161,11 @@ Canlı deneme normal kotaları tüketir ve ücret doğurabilir. Katalogda aramay
 eşleşen aday olmalı; sağlayıcının döndürdüğü en az bir geçerli katalog kimliği
 kabul edilmeden LIVE VERIFIED sonucu yazılmaz. Kişisel bilgi kullanmayın.
 Taklit yanıt testleri ve SKIPPED çıktısı canlı API başarısı değildir.
+
+## Otomatik dağıtım kontrolleri
+
+CI SQLite ve PostgreSQL testlerine ek olarak Gunicorn yapılandırmasını yükler.
+Nginx dosyası Linux runner'da geçici, kendinden imzalı sertifika kullanılarak
+`nginx -t` ile doğrulanır. Bu kontrol gerçek alan adının sertifikasını veya
+canlı HTTPS bağlantısını doğrulamaz. Test ortamındaki PostgreSQL geri yükleme
+provası, yeni ve geçici bir DB oluşturup okuma kontrolünden sonra onu kaldırır.

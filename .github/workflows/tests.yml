@@ -64,3 +64,28 @@ jobs:
       - run: python manage.py smoke_gemini
         env:
           LLM_API_KEY: ""
+
+  deployment-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Nginx with an isolated test certificate
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx
+          mkdir -p "$RUNNER_TEMP/tls"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -keyout "$RUNNER_TEMP/tls/key.pem" -out "$RUNNER_TEMP/tls/cert.pem" \
+            -subj "/CN=library.example.test" > /dev/null 2>&1
+          export QA_NGINX_ROOT="$RUNNER_TEMP"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          root = Path(os.environ["QA_NGINX_ROOT"])
+          source = Path("deploy/nginx.conf").read_text()
+          source = source.replace("/etc/letsencrypt/live/library.example.test/fullchain.pem", str(root / "tls/cert.pem"))
+          source = source.replace("/etc/letsencrypt/live/library.example.test/privkey.pem", str(root / "tls/key.pem"))
+          (root / "library-server.conf").write_text(source)
+          (root / "nginx.conf").write_text("events {}\nhttp { include " + str(root / "library-server.conf") + "; }\n")
+          PY
+          sudo nginx -t -c "$RUNNER_TEMP/nginx.conf"
