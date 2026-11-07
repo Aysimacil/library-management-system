@@ -78,7 +78,7 @@ def flush_media(using="default", limit=100):
     done = 0
     with media_lock(using):
         operations = CoverOperation.objects.using(using).order_by("pk")[:limit]
-        for operation in list(operations):
+        for operation in operations.iterator(chunk_size=1):
             if not MANAGED_NAME.fullmatch(operation.name):
                 raise ValueError("Unmanaged cover name")
             referenced = Book.objects.using(using).filter(cover=operation.name).exists()
