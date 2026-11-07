@@ -38,7 +38,7 @@ class CatalogEnhancementTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "image/jpeg")
         self.assertEqual(response["X-Content-Type-Options"], "nosniff")
-        response.close()
+        self.assertTrue(b"".join(response.streaming_content).startswith(b"\xff\xd8"))
 
     def test_untrusted_and_oversize_files_rejected_without_persisting(self):
         for content in (b"<svg onload='alert(1)'/>", b"x" * (4 * 1024 * 1024 + 1)):
