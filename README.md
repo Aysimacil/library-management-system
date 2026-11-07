@@ -1,13 +1,13 @@
 # Kütüphane Yönetim Sistemi
 
-Katalog, üyelik, fiziksel teslim, iade, uzatma ve gecikme cezası işlemlerini tek Django uygulamasında birleştiren ders projesi. Bu README `feature/library-production-readiness` sürümünü anlatır.
+Katalog, üyelik, fiziksel teslim, iade, uzatma ve gecikme cezası işlemlerini tek Django uygulamasında birleştiren ders projesi. Bu README `feature/catalog-management-ui` sürümünü anlatır.
 
 ## Yerel kurulum
 
 Python 3.12, Django 6.1.2 ve Django Templates kullanılır. Varsayılan yerel veritabanı SQLite'tır. Eşzamanlı personel işlemleri için PostgreSQL kullanın.
 
 ```bash
-git clone --branch feature/library-production-readiness https://github.com/Aysimacil/library-management-system.git
+git clone --branch feature/catalog-management-ui https://github.com/Aysimacil/library-management-system.git
 cd library-management-system
 python3.12 -m venv .venv
 source .venv/bin/activate
@@ -108,3 +108,18 @@ python manage.py smoke_gemini
 Son komut anahtar veya --live izni olmadan SKIPPED döndürür. Sağlık rotaları
 `/health/live/` ve `/health/ready/` şeklindedir. Canlı sunucu, HTTPS sertifikası,
 SMTP ve gerçek Gemini teslimi kendi hedef ortamlarında ayrıca doğrulanmalıdır.
+
+## Uygulama içi Katalog Yönetimi
+
+Personel menüsündeki **Katalog Yönetimi** bağlantısı `/katalog-yonetimi/`
+adresini açar. Kitap arama/filtreleme, kapak ve stok; kitap ekleme/düzenleme;
+yazar/kategori ekleme-düzenleme; fiziksel kopya ve raf yönetimi kullanılabilir.
+Django Admin alternatif yönetim yolu olarak korunur.
+
+Önce `python manage.py sync_library_roles` çalıştırın. Yerel kullanıcıyı yetkili
+Django Admin hesabıyla Kütüphaneci grubuna ekleyin ve `is_staff` bayrağını açın.
+Parolasını yerel terminalde `python manage.py changepassword <kullanici>` ile
+belirleyin. Giriş `/hesap/giris/`, yeni kitap `/katalog-yonetimi/yeni/` adresindedir.
+Üye ve izinsiz staff hesapları yönetim ekranlarına erişemez.
+
+[İzinler, ekranlar ve B03 doğrulama notları](docs/catalog-management.md).

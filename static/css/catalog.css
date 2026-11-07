@@ -197,7 +197,7 @@ td .actions { margin: .2rem; }
 .management-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
 .management-layout { display: grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr); gap: 1.5rem; align-items: start; }
 .editor-form { display: grid; gap: 1.3rem; }
-.editor-field { min-width: 0; }
+.editor-field { min-width: 0; overflow-wrap: anywhere; }
 .editor-field input:not([type=checkbox]), .editor-field textarea, .editor-field select { width: 100%; }
 .editor-field textarea { font: inherit; padding: .8rem; border: 1px solid #b7c2b8; border-radius: .4rem; resize: vertical; min-height: 7rem; max-width: 100%; }
 .choice-field > div { max-height: 14rem; overflow-y: auto; background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; padding: .7rem; }
