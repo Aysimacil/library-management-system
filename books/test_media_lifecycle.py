@@ -163,3 +163,13 @@ class MediaLifecycleTests(TestCase):
         marker.write_text("correct-volume")
         flush_media()
         self.assertTrue((self.root / book.cover.name).exists())
+
+    def test_admin_current_cover_link_uses_the_safe_book_route(self):
+        from django.contrib.auth import get_user_model
+        book = self.book()
+        staff = get_user_model().objects.create_superuser(username="cover-admin")
+        self.client.force_login(staff)
+        response = self.client.get(reverse("admin:books_book_change", args=[book.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("books:cover", args=[book.pk]))
+        self.assertEqual(book.cover.url, reverse("books:cover", args=[book.pk]))

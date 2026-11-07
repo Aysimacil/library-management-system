@@ -3,7 +3,7 @@ from django.db import models, router, transaction
 from django.db.models import Q
 
 from .validators import validate_isbn
-from .covers import cover_path, prepare_cover, validate_cover
+from .covers import BookCoverField, cover_path, prepare_cover, validate_cover
 
 
 class Author(models.Model):
@@ -38,7 +38,7 @@ class Book(models.Model):
         "ISBN", max_length=13, blank=True, default="", validators=[validate_isbn],
         help_text="Tire veya boşluk olmadan ISBN-10 ya da ISBN-13 girin.",
     )
-    cover = models.ImageField("Kapak görseli", upload_to=cover_path, blank=True, validators=[validate_cover])
+    cover = BookCoverField("Kapak görseli", upload_to=cover_path, blank=True, validators=[validate_cover])
     authors = models.ManyToManyField(Author, related_name="books", verbose_name="Yazarlar")
     categories = models.ManyToManyField(
         Category, related_name="books", blank=True, verbose_name="Kategoriler",

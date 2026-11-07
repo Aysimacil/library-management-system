@@ -4,6 +4,9 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
+from django.db.models import ImageField
+from django.db.models.fields.files import ImageFieldFile
+from django.urls import reverse
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 MAX_COVER_BYTES = 4 * 1024 * 1024
@@ -42,3 +45,20 @@ def prepare_cover(upload):
 
 def validate_cover(upload):
     prepare_cover(upload)
+
+
+# Keep admin's "current file" link on the same safe route as catalog covers.
+class BookCoverFile(ImageFieldFile):
+    @property
+    def url(self):
+        self._require_file()
+        return reverse("books:cover", args=[self.instance.pk]) if self.instance.pk else ""
+
+
+class BookCoverField(ImageField):
+    attr_class = BookCoverFile
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        # Only runtime URL handling differs; the database schema stays ImageField.
+        return name, "django.db.models.ImageField", args, kwargs
