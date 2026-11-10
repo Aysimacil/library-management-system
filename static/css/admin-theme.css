@@ -89,6 +89,22 @@ thead th { text-transform: none; font-size: .8rem; background: #eff2ea; }
 #toolbar { margin-bottom: 1rem; }
 #toolbar form { display: flex; align-items: center; flex-wrap: wrap; gap: .55rem; }
 #toolbar form input[type="text"] { margin: 0; }
+#changelist-search > div {
+    display: flex; flex: 1 1 100%; align-items: center; flex-wrap: wrap;
+    gap: .5rem; max-width: 100%; min-width: 0;
+}
+#toolbar form #searchbar {
+    flex: 1 1 12rem; width: auto; min-width: 6rem; height: auto;
+    min-height: 44px; margin: 0; padding: .65rem .75rem;
+}
+#toolbar form input[type="submit"], #changelist .actions .button {
+    background: #244f40; color: #fff; box-shadow: none;
+    border: 1px solid #244f40; border-radius: .5rem;
+    min-height: 44px; padding: .65rem 1rem;
+}
+#toolbar form input[type="submit"]:hover, #changelist .actions .button:hover {
+    background: #193e30;
+}
 #changelist-filter h2 { border-radius: .75rem .75rem 0 0; padding: .85rem 1rem; }
 #changelist-filter h3, #changelist-filter ul { padding-inline: 1rem; }
 #changelist-filter li.selected { border-left-color: #244f40; }
@@ -151,10 +167,14 @@ body.login .submit-row { padding: .5rem 0; border: 0; margin: 0; }
     .object-tools { margin: .5rem 0 1rem; }
     .object-tools a { padding: .65rem .85rem; }
     .form-row { padding: .9rem; }
-    .aligned .form-row > div { min-width: 0; }
+    .aligned .form-row > div { min-width: 0; max-width: 100%; box-sizing: border-box; }
+    .aligned .flex-container { width: 100%; }
     .aligned input.vTextField, .aligned textarea, .related-widget-wrapper { max-width: 100%; }
-    .selector { width: 100%; min-width: 0; }
+    .aligned textarea, .related-widget-wrapper { width: 100%; min-width: 0; }
+    .related-widget-wrapper .select2-container { width: 100% !important; max-width: 100%; min-width: 0; }
+    .selector { width: 100%; min-width: 0; flex-direction: column; }
     .selector-available, .selector-chosen { min-width: 0; }
+    .selector ul.selector-chooser { display: flex; width: auto; transform: none; align-self: flex-start; }
     .submit-row { flex-direction: column; align-items: stretch; }
     .submit-row input, .submit-row a.closelink, .submit-row p, .submit-row a.deletelink { width: 100%; text-align: center; }
     #changelist .paginator { white-space: normal; line-height: 2; }

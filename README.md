@@ -123,3 +123,10 @@ belirleyin. Giriş `/hesap/giris/`, yeni kitap `/katalog-yonetimi/yeni/` adresin
 Üye ve izinsiz staff hesapları yönetim ekranlarına erişemez.
 
 [İzinler, ekranlar ve B03 doğrulama notları](docs/catalog-management.md).
+
+## Admin görsel teması
+
+`feature/admin-theme-consistency` dalında Django Admin, mevcut kütüphane
+arayüzünün krem/yeşil paletiyle uyumludur. Giriş, listeler, formlar ve kullanıcı/grup
+yönetimi ortak açık temayı kullanır; izin ve iş kuralları değişmez.
+[Temanın kapsamı, doğrulaması ve yerel açılış](docs/admin-theme.md).
