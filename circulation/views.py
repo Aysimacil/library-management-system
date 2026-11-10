@@ -37,12 +37,15 @@ def desk(request):
     fines = Fine.objects.select_related("loan__member", "loan__copy__book").filter(paid_at=None)
     if q:
         fines = fines.filter(Q(loan__member__username__icontains=q) | Q(loan__copy__inventory_code__icontains=q))
+    selected_copy = BookCopy.objects.select_related("book").filter(
+        inventory_code=request.GET.get("copy", ""),
+    ).first()
     return render(request, "circulation/desk.html", {
         "form": IssueForm(initial={"inventory_code": request.GET.get("copy", ""), "username": request.GET.get("member", "")}),
         "loans": active[:100], "copies": copies[:25] if q else [], "members": members[:25] if q else [],
         "fines": fines[:100] if request.user.has_perm("circulation.view_fine") else [],
         "pending": CheckoutRequest.objects.filter(status="PENDING").select_related("member", "book").order_by("created_at")[:100],
-        "today": timezone.localdate(), "overview": overview,
+        "today": timezone.localdate(), "overview": overview, "selected_copy": selected_copy,
     })
 
 
