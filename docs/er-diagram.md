@@ -1,3 +1,10 @@
+
+## Görsel ER Diyagramı
+
+![Kütüphane Yönetim Sistemi ER Diyagramı](er-diagram.png)
+
+*Görsel, sistemin temel varlıklarını ve ilişkilerini özetler. Ayrıntılı teknik veri modeli aşağıdadır.*
+
 # Uygulamanın veri modeli
 
 ```mermaid
