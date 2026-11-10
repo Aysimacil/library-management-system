@@ -1,0 +1,22 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} · {% endif %}{{ title }} · Kütüphane Yönetimi{% endblock %}
+
+{# Keep one deliberate light palette regardless of OS or a saved Admin theme. #}
+{% block dark-mode-vars %}{% endblock %}
+
+{% block responsive %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/admin-theme.css' %}" {% csp_nonce_attr %}>
+{% endblock %}
+
+{% block branding %}
+<div class="library-admin-brand">
+    <a class="library-admin-name" href="{% url 'admin:index' %}">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 5v16M12 5C9 2 5 3 2 4v15c4-1 7-1 10 2 3-3 6-3 10-2V4c-3-1-7-2-10 1Z"/></svg>
+        Kütüphane Yönetimi
+    </a>
+    <a class="library-admin-return" href="{% url 'books:list' %}">← Kütüphaneye dön</a>
+</div>
+{% endblock %}
