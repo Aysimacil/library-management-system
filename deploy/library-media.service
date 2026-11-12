@@ -1,0 +1,17 @@
+[Unit]
+Description=Retry committed library cover operations
+After=network.target
+
+[Service]
+Type=oneshot
+User=library
+Group=www-data
+WorkingDirectory=/srv/library/current
+EnvironmentFile=/etc/library/environment
+ExecStart=/srv/library/current/.venv/bin/python manage.py process_cover_operations --limit 1000
+UMask=0007
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/library/media /srv/library/tmp

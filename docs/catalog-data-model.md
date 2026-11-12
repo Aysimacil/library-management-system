@@ -1,0 +1,91 @@
+# Katalog veri modeli — ilk uygulama
+
+Bu belge ikinci ekip üyesinin katalog ve fiziksel kopya çalışmasını açıklar.
+Mevcut `books` uygulaması korunmuştur; README'deki `catalog` adı hedef yapı önerisidir.
+
+## Uygulanan alanlar ve ilişkiler
+
+| Model | Alanlar ve kurallar |
+|---|---|
+| `Author` | Ad, isteğe bağlı biyografi. Aynı adlı farklı yazarlara izin verilir. |
+| `Category` | Benzersiz ad, isteğe bağlı açıklama. |
+| `Book` | Başlık, isteğe bağlı ISBN/yayın yılı/açıklama, yazarlar, kategoriler, kayıt zamanları. |
+| `BookCopy` | Kitap, benzersiz demirbaş kodu, isteğe bağlı raf konumu, durum, kayıt zamanları. |
+
+- `Book.authors` ve `Book.categories` çoktan çoğa ilişkilerdir. Formlarda en az bir yazar gerekir; kategori isteğe bağlıdır.
+- `BookCopy.book`, `Book.copies` ters ilişkisini sunar. Fiziksel kopyası olan kitap `PROTECT` ile silinmeye karşı korunur.
+- ISBN tire/boşluk içermeyen ISBN-10 veya ISBN-13 biçimindedir. Model/form doğrulaması kontrol basamağını da denetler; ISBN-10 son basamağında büyük `X` kabul edilir.
+- ISBN girildiyse veritabanında benzersizdir. ISBN'siz birden fazla kitap eklenebilir. ISBN-10 ile aynı yayının ISBN-13 karşılığı ayrı değerlerdir; otomatik dönüştürme yapılmaz.
+- Yayın yılı bilinmiyorsa `NULL`; girildiyse 1–9999 aralığındadır. Yıl ve kopya durumu veritabanı kısıtlarıyla da korunur.
+- Kopyalar `AVAILABLE` olarak oluşturulur. İlk sürüm durumları `AVAILABLE` ve `ON_LOAN`'dır. Durum alanı katalog formlarında düzenlenemez.
+- Kullanılabilir stok `book.available_copy_count` ile `AVAILABLE` kopyalardan hesaplanır; bağımsız stok sayacı yoktur. Kitap listesi geliştirilirken toplu sayım sorguları kullanılmalıdır.
+
+## Diğer ekip üyeleriyle bağlantı
+
+`Loan.copy`, `BookCopy.pk` kaydına PROTECT ilişkisiyle bağlanır.
+Dolaşım servisi kopyayı kilitleyip ödünç ve durum değişikliklerini atomik kaydeder.
+Geçmişi olan kopyanın kitabını değiştirmek yeni veritabanı tetikleyicisiyle engellenir.
+Admin, metadata değiştirirken yalnız ilgili alanları yazar. Eşzamanlı raf değişimi
+ve teslim PostgreSQL üzerinde test edilir. Katalog, üyelik, teslim/iade, ceza ve
+öneri modüllerinin güncel kapsamı [ana README](../README.md) içindedir.
+
+## Yönetim paneli
+
+- `/admin/` altında yazar, kategori, kitap ve fiziksel kopyalar yönetilebilir. Erişim için `is_staff` ve ilgili Django model izinleri gerekir; yalnızca staff olmak yetmez.
+- Kitaplar başlık, ISBN ve yazar adına göre aranabilir; kategoriye göre filtrelenebilir. Toplam ve müsait kopya sayıları toplu sorguyla hesaplanır.
+- Kopyalar demirbaş kodu, kitap adı veya ISBN ile aranabilir; duruma göre filtrelenebilir.
+- Kopya durumu katalog panelinde değiştirilemez. Ödünçteki kopyanın kitabı/demirbaş kodu da değiştirilemez ve bu kopya silinemez. Kopyalarda toplu silme kapalıdır.
+- Bu panelin arama alanı, üyelere yönelik katalog ekranlarının yerini tutmaz. Okuyucular ana sayfadaki salt okunur kataloğu kullanabilir.
+
+Kontrol komutları:
+
+```bash
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test books
+```
+
+## İlişkiler
+
+```mermaid
+erDiagram
+    Book }o--o{ Author : yazarlar
+    Book }o--o{ Category : kategoriler
+    Book ||--o{ BookCopy : kopyalar
+```
+
+## Kataloğu deneme
+
+Yerel geliştirme veritabanında `python manage.py migrate` ve ardından
+`python manage.py seed_catalog` çalıştırın. Sunucuyu `python manage.py runserver`
+ile başlatın. Ana sayfada üç örnek kitabı görebilir, yazar veya kategoriyle
+arayabilir ve başlığa tıklayarak ayrıntılara geçebilirsiniz. Aynı demo komutunu
+yeniden çalıştırdığınızda mevcut demirbaş kodları korunur.
+
+Katalog ve kitap detayları giriş gerektirmeyen salt okunur sayfalardır.
+Dolaşım uygulaması fiziksel kopyayı kendi birincil anahtarıyla referans almalıdır.
+
+### Tarayıcı kontrolü — 6 Kasım 2026
+
+SQLite üzerinde migration ve demo kurulumu sonrasında Opera'da 320 ve 1280 piksel
+genişliklerinde katalog kontrol edildi. Her iki genişlikte üç kitap listelendi.
+“Atlası” araması tek sonuç verdi. Detay ekranında “1 / 1 kopya müsait” görüldü
+ve katalog bağlantısıyla listeye dönüldü. Liste ve detay ekranlarında yatay
+taşma ölçülmedi. Dar ekran kontrolü masaüstü tarayıcısında gerçekleştirildi.
+
+### PostgreSQL kontrolü — 6 Kasım 2026
+
+Geçici bir PostgreSQL 18.6 sunucusunda, psycopg 3.3.8 ve Django 6.1.2 ile
+temiz veritabanına tüm migration'lar uygulandı. `manage.py test books`
+komutuyla 30 test geçti. `seed_catalog` art arda iki kez çalıştırıldıktan
+sonra kitap ve fiziksel kopya sayıları üçer olarak doğrulandı.
+Bu kontrol geçici Django bağlantı ayarlarıyla yürütüldü. Projenin varsayılan
+yerel veritabanı SQLite'tır.
+
+### Mobil WebKit kontrolü — 6 Kasım 2026
+
+iPhone 13 tarayıcı profiliyle (390 × 664 görünüm alanı) WebKit üzerinde
+“Atlası” araması ve “Yalnızca müsait kitaplar” seçimi tek sonuç verdi.
+Dokunarak açılan detayda “1 / 1 kopya müsait” görüldü. Katalog bağlantısıyla
+dönüldüğünde sonuç adresi, arama ve müsaitlik seçimi korundu.
+Her iki sayfada yatay taşma kontrolü geçti. Bu test mobil emülasyonla yapıldı.

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Katalog Yönetimi · Kütüphane{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">Personel çalışma alanı</p><h1>Katalog Yönetimi</h1><p class="lead">Koleksiyonu düzenle, fiziksel kopyaları ve rafları takip et.</p></div>
+{% if perms.books.add_book %}<a class="button" href="{% url 'books:manage-create' %}">+ Yeni Kitap Ekle</a>{% endif %}</div>
+{% include "books/manage/nav.html" %}
+<form method="get" class="catalog-search" role="search">
+<div class="search-main">{{ filters.q.label_tag }}{{ filters.q }}{{ filters.q.errors }}<button>Ara</button></div>
+<details class="filter-panel" {% if request.GET.category or request.GET.author or request.GET.year_from or filters.errors %}open{% endif %}><summary>Filtreler ve sıralama</summary><div class="filter-grid">{% for field in filters %}{% if field.name != 'q' and field.name != 'available' %}<div>{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}</div></details>
+<div class="search-footer"><label class="checkbox">{{ filters.available }} Yalnızca müsait kitaplar</label><a href="{% url 'books:manage' %}">Filtreleri temizle</a></div>
+</form>
+<div class="section-heading"><h2>Koleksiyon</h2><span class="muted" role="status">{{ paginator.count }} kitap</span></div>
+<div class="management-grid">{% for book in books %}<article class="management-card">
+<a href="{% url 'books:manage-detail' book.pk %}" class="management-cover">{% include "books/includes/cover.html" %}</a>
+<div class="management-content"><h2><a href="{% url 'books:manage-detail' book.pk %}">{{ book.title }}</a></h2><p>{{ book.authors.all|join:", "|default:"Yazar belirtilmemiş" }}</p><div class="tag-row">{% for category in book.categories.all %}<span class="tag">{{ category.name }}</span>{% endfor %}</div>
+<dl class="metadata"><div><dt>ISBN</dt><dd>{{ book.isbn|default:"—" }}</dd></div><div><dt>Yayın yılı</dt><dd>{{ book.publication_year|default:"—" }}</dd></div></dl>
+<p class="stock">{{ book.total }} toplam · {{ book.available }} müsait kopya</p><div class="management-actions"><a class="button secondary" href="{% url 'books:manage-detail' book.pk %}">Kopyaları yönet</a>{% if perms.books.change_book %}<a class="button secondary" href="{% url 'books:manage-edit' book.pk %}">Düzenle</a>{% endif %}</div></div>
+</article>{% empty %}<div class="empty-state"><h2>Henüz kitap yok veya arama eşleşmedi</h2><p>Filtreleri temizleyin ya da yeni bir kitap ekleyerek koleksiyona başlayın.</p></div>{% endfor %}</div>
+{% if is_paginated %}<nav class="pagination" aria-label="Kitap sayfaları">{% if page_obj.has_previous %}<a href="{% querystring page=page_obj.previous_page_number %}">Önceki</a>{% endif %}<span>{{ page_obj.number }} / {{ paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="{% querystring page=page_obj.next_page_number %}">Sonraki</a>{% endif %}</nav>{% endif %}
+{% endblock %}

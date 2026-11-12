@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}Giriş · Kütüphane{% endblock %}
+{% block content %}<h1>Giriş yap</h1><form method="post" class="stack">{% csrf_token %}
+{{ form.as_p }}<input type="hidden" name="next" value="{{ next }}"><button>Giriş yap</button></form>
+<p><a href="{% url 'accounts:signup' %}">Üyelik oluştur</a></p>{% endblock %}

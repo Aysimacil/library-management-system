@@ -1,0 +1,6 @@
+<nav class="management-tabs" aria-label="Katalog yönetimi">
+<a href="{% url 'books:manage' %}">Kitaplar</a>
+{% if perms.books.view_author %}<a href="{% url 'books:manage-taxonomy' 'authors' %}">Yazarlar</a>{% endif %}
+{% if perms.books.view_category %}<a href="{% url 'books:manage-taxonomy' 'categories' %}">Kategoriler</a>{% endif %}
+<a href="{% url 'books:list' %}">Üye kataloğunu gör ↗</a>
+</nav>

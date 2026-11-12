@@ -1,0 +1,91 @@
+name: Library checks
+on:
+  push:
+    branches: [feature/library-integration-mvp, feature/library-ui-enhancements, feature/library-production-readiness, main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [sqlite, postgresql]
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: library_ci
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['127.0.0.1:5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DJANGO_ENV: development
+      DB_ENGINE: ${{ matrix.engine }}
+      DB_NAME: ${{ matrix.engine == 'postgresql' && 'library_ci' || 'db.sqlite3' }}
+      DB_USER: postgres
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py migrate --noinput
+      - run: python manage.py seed_library_demo
+      - run: python manage.py seed_library_demo
+      - name: Use the matching PostgreSQL client from the isolated CI container
+        env:
+          PG_CONTAINER_ID: ${{ job.services.postgres.id }}
+        run: |
+          cat > "$RUNNER_TEMP/library-pg-dump" <<'SH'
+          #!/bin/sh
+          exec docker exec "$PG_CONTAINER_ID" pg_dump "$@"
+          SH
+          cat > "$RUNNER_TEMP/library-pg-restore" <<'SH'
+          #!/bin/sh
+          exec docker exec -i "$PG_CONTAINER_ID" pg_restore "$@"
+          SH
+          chmod 700 "$RUNNER_TEMP/library-pg-dump" "$RUNNER_TEMP/library-pg-restore"
+          echo "PG_DUMP_PATH=$RUNNER_TEMP/library-pg-dump" >> "$GITHUB_ENV"
+          echo "PG_RESTORE_PATH=$RUNNER_TEMP/library-pg-restore" >> "$GITHUB_ENV"
+          echo "PG_CONTAINER_ID=$PG_CONTAINER_ID" >> "$GITHUB_ENV"
+      - run: python manage.py test --verbosity 2
+      - run: gunicorn --check-config --config deploy/gunicorn.conf.py library_system.wsgi:application
+      - run: python manage.py collectstatic --noinput
+      - run: python manage.py smoke_gemini
+        env:
+          LLM_API_KEY: ""
+
+  deployment-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Nginx with an isolated test certificate
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx
+          mkdir -p "$RUNNER_TEMP/tls"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -keyout "$RUNNER_TEMP/tls/key.pem" -out "$RUNNER_TEMP/tls/cert.pem" \
+            -subj "/CN=library.example.test" > /dev/null 2>&1
+          export QA_NGINX_ROOT="$RUNNER_TEMP"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          root = Path(os.environ["QA_NGINX_ROOT"])
+          source = Path("deploy/nginx.conf").read_text()
+          source = source.replace("/etc/letsencrypt/live/library.example.test/fullchain.pem", str(root / "tls/cert.pem"))
+          source = source.replace("/etc/letsencrypt/live/library.example.test/privkey.pem", str(root / "tls/key.pem"))
+          (root / "library-server.conf").write_text(source)
+          (root / "nginx.conf").write_text("events {}\nhttp { include " + str(root / "library-server.conf") + "; }\n")
+          PY
+          sudo nginx -t -c "$RUNNER_TEMP/nginx.conf"

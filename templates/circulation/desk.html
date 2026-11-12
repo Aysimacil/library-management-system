@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% block title %}Teslim masası · Kütüphane{% endblock %}
+{% block content %}<div class="page-heading"><div><p class="eyebrow">Personel alanı</p><h1>Teslim masası</h1><p class="lead">Üyeleri bul, fiziksel teslimleri ve iadeleri yönet.</p></div></div>
+<div class="metric-grid"><div class="metric"><span>Aktif ödünç</span><strong>{{ overview.active }}</strong></div><div class="metric"><span>Gecikenler</span><strong>{{ overview.overdue }}</strong></div><div class="metric"><span>Bekleyen talepler</span><strong>{{ overview.pending }}</strong></div></div>
+<div class="dashboard-split"><section class="panel">
+{% if perms.circulation.issue_loan %}<h2>Kitap teslimi</h2>
+{% if selected_copy %}<div class="notice"><strong>{{ selected_copy.book.title }}</strong><p>Demirbaş {{ selected_copy.inventory_code }} · {{ selected_copy.get_status_display }}</p><p class="stock">{{ selected_copy.book.available_copy_count }} / {{ selected_copy.book.copies.count }} kopya müsait</p><a href="{% url 'books:detail' selected_copy.book_id %}">Kitap detayını gör</a></div>{% endif %}
+<p class="muted">Üyeyi ve fiziksel kopyayı kontrol ederek teslimi onaylayın. Seçim yapmak kopyayı ayırmaz.</p>
+<form action="{% url 'circulation:issue' %}" method="post">{% csrf_token %}{{ form.as_p }}<button>Teslimi onayla</button></form>{% endif %}
+</section><section class="panel"><h2>Bekleyen talepler</h2><p class="muted">Talep stok ayırmaz. Bir talebi seçip uygun demirbaş koduyla teslimi tamamlayın.</p><ul>{% for entry in pending %}<li><a href="?member={{ entry.member.username|urlencode }}&amp;q={{ entry.book.title|urlencode }}">{{ entry.member.username }} · {{ entry.book.title }}</a></li>{% empty %}<li>Bekleyen talep yok.</li>{% endfor %}</ul>
+</section></div><section class="panel"><h2>Ödünç kayıtları</h2><form method="get"><label>Üye, kitap veya demirbaş <input type="search" name="q" value="{{ request.GET.q }}"></label>
+<label><input type="checkbox" name="overdue" value="1" {% if request.GET.overdue %}checked{% endif %}> Yalnızca gecikenler</label><button>Ara</button></form>
+{% if request.GET.q %}<h3>Üyeler ve kopyalar</h3><ul>
+{% for member in members %}<li><a href="?member={{ member.username|urlencode }}&amp;copy={{ request.GET.copy|urlencode }}&amp;q={{ request.GET.q|urlencode }}">{{ member.username }} ile teslim başlat</a></li>{% endfor %}
+{% for copy in copies %}<li>{{ copy.book.title }} · {{ copy.get_status_display }} · <strong>{{ copy.inventory_code }}</strong> · Raf {{ copy.shelf_location|default:"Belirtilmemiş" }} {% if copy.status == 'AVAILABLE' and perms.circulation.issue_loan %}<a class="button secondary" href="?copy={{ copy.inventory_code|urlencode }}&amp;member={{ request.GET.member|urlencode }}&amp;q={{ request.GET.q|urlencode }}">Bu kopyayı seç</a>{% else %}<span class="muted">Teslime uygun değil</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+<div class="table-scroll"><table><thead><tr><th>Kitap / Kopya</th><th>Üye</th><th>Son gün</th><th>İşlem</th></tr></thead>
+<tbody>{% for loan in loans %}<tr><td>{{ loan.copy.book.title }} · {{ loan.copy.inventory_code }}</td><td>{{ loan.member.username }}</td><td>{{ loan.due_date }} {% if loan.due_date < today %}(Gecikmiş){% endif %}</td><td>
+{% if perms.circulation.return_loan %}<form class="actions" method="post" action="{% url 'circulation:return' loan.pk %}">{% csrf_token %}<button>İade al</button></form>{% endif %}
+{% if perms.circulation.renew_loan and not loan.renewal_count %}<form class="actions" method="post" action="{% url 'circulation:renew' loan.pk %}">{% csrf_token %}<button>Uzat</button></form>{% endif %}
+</td></tr>{% empty %}<tr><td colspan="4">Aktif ödünç bulunamadı.</td></tr>{% endfor %}</tbody></table></div>
+</section>{% if perms.circulation.view_fine %}<section class="panel"><h2>Ödenmemiş cezalar</h2><ul>{% for fine in fines %}<li>{{ fine.loan.member.username }} · {{ fine.loan.copy.book.title }} · {{ fine.amount }} TL
+{% if perms.circulation.pay_fine %}<form class="actions" method="post" action="{% url 'circulation:pay' fine.pk %}">{% csrf_token %}<button>Demo ödeme kaydet</button></form>{% endif %}</li>
+{% empty %}<li>Ödenmemiş ceza bulunamadı.</li>{% endfor %}</ul></section>{% endif %}
+{% endblock %}

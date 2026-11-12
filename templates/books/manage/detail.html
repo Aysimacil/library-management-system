@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ book.title }} · Katalog Yönetimi{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'books:manage' %}">← Katalog Yönetimi</a>
+<div class="page-heading"><div><p class="eyebrow">Kitap ve fiziksel envanter</p><h1>{{ book.title }}</h1><p class="lead">{{ book.authors.all|join:", " }}</p></div>{% if perms.books.change_book %}<a class="button secondary" href="{% url 'books:manage-edit' book.pk %}">Kitabı düzenle</a>{% endif %}</div>
+<div class="inventory-summary"><div class="management-cover">{% include "books/includes/cover.html" %}</div><div class="panel"><div class="tag-row">{% for category in book.categories.all %}<span class="tag">{{ category.name }}</span>{% endfor %}</div><dl class="metadata"><div><dt>ISBN</dt><dd>{{ book.isbn|default:"—" }}</dd></div><div><dt>Yayın yılı</dt><dd>{{ book.publication_year|default:"—" }}</dd></div><div><dt>Yazar</dt><dd>{{ book.authors.count }}</dd></div><div><dt>Kategori</dt><dd>{{ book.categories.count }}</dd></div></dl>{{ book.description|linebreaks }}</div></div>
+<div class="metric-grid"><div class="metric"><span>Toplam kopya</span><strong>{{ book.total }}</strong></div><div class="metric"><span>Müsait kopya</span><strong>{{ book.available }}</strong></div></div>
+{% if perms.books.view_bookcopy %}<section class="panel"><div class="section-heading"><div><h2>Fiziksel kopyalar</h2><p class="muted">Durum teslim ve iade işlemlerinden otomatik güncellenir.</p></div>{% if perms.books.add_bookcopy %}<a class="button" href="{% url 'books:manage-copy-create' book.pk %}">+ Fiziksel kopya ekle</a>{% endif %}</div>
+<ul class="record-list">{% for copy in copies %}<li><div><strong>{{ copy.inventory_code }}</strong><span class="muted">Raf: {{ copy.shelf_location|default:"Belirtilmemiş" }}</span></div><span class="tag {% if copy.status == 'ON_LOAN' %}late{% endif %}">{{ copy.get_status_display }}</span>{% if perms.books.change_bookcopy %}<a class="button secondary" href="{% url 'books:manage-shelf' copy.pk %}">Rafı düzenle</a>{% endif %}</li>{% empty %}<li>Henüz fiziksel kopya eklenmedi.</li>{% endfor %}</ul></section>{% endif %}
+{% endblock %}

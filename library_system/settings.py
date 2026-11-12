@@ -10,22 +10,65 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
+import secrets
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
+def boolean(name, default):
+    value = os.environ.get(name, str(default)).strip().lower()
+    if value not in {"true", "false", "1", "0"}:
+        raise ImproperlyConfigured(f"{name} must be true or false.")
+    return value in {"true", "1"}
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-_zs*c%!jbcnt)ri6_vyb#_unf8v!=(2kh+oe%b09kiqu=d=4ku'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+def required(name):
+    value = os.environ.get(name)
+    if not value or not value.strip():
+        raise ImproperlyConfigured(f"{name} is required.")
+    return value
 
-ALLOWED_HOSTS = []
+
+def items(name, default=""):
+    return [item.strip() for item in os.environ.get(name, default).split(",") if item.strip()]
+
+
+ENVIRONMENT = os.environ.get("DJANGO_ENV", "development")
+if ENVIRONMENT not in {"development", "production"}:
+    raise ImproperlyConfigured("DJANGO_ENV must be development or production.")
+PRODUCTION = ENVIRONMENT == "production"
+
+SECRET_KEY = required("SECRET_KEY") if PRODUCTION else (
+    os.environ.get("SECRET_KEY") or secrets.token_urlsafe(64)
+)
+if PRODUCTION and (len(SECRET_KEY) < 50 or len(set(SECRET_KEY)) < 5 or SECRET_KEY.startswith("django-insecure-")):
+    raise ImproperlyConfigured("Generate a new random SECRET_KEY for production.")
+
+DEBUG = boolean("DEBUG", not PRODUCTION)
+ALLOWED_HOSTS = items("ALLOWED_HOSTS", "" if PRODUCTION else "localhost,127.0.0.1,[::1]")
+if PRODUCTION and (DEBUG or not ALLOWED_HOSTS or any("*" in host for host in ALLOWED_HOSTS)):
+    raise ImproperlyConfigured("Production requires DEBUG=false and explicit ALLOWED_HOSTS.")
+
+CSRF_TRUSTED_ORIGINS = items("CSRF_TRUSTED_ORIGINS")
+if PRODUCTION and any(not origin.startswith("https://") or "*" in origin for origin in CSRF_TRUSTED_ORIGINS):
+    raise ImproperlyConfigured("Use explicit HTTPS origins for CSRF_TRUSTED_ORIGINS.")
+SECURE_SSL_REDIRECT = PRODUCTION
+SESSION_COOKIE_SECURE = PRODUCTION
+CSRF_COOKIE_SECURE = PRODUCTION
+SECURE_HSTS_SECONDS = int(os.environ.get("HSTS_SECONDS", "0")) if PRODUCTION else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = PRODUCTION and boolean("HSTS_INCLUDE_SUBDOMAINS", False)
+SECURE_HSTS_PRELOAD = PRODUCTION and boolean("HSTS_PRELOAD", False)
+if SECURE_HSTS_PRELOAD and (not SECURE_HSTS_INCLUDE_SUBDOMAINS or SECURE_HSTS_SECONDS < 31536000):
+    raise ImproperlyConfigured("HSTS preload requires all subdomains and HSTS_SECONDS >= 31536000.")
+if SECURE_HSTS_SECONDS < 0:
+    raise ImproperlyConfigured("HSTS_SECONDS cannot be negative.")
+if PRODUCTION and boolean("TRUST_PROXY_HTTPS", False):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # Application definition
@@ -38,6 +81,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'books',
+    'accounts',
+    'circulation',
+    'recommendations',
 ]
 
 MIDDLEWARE = [
@@ -73,12 +119,30 @@ WSGI_APPLICATION = 'library_system.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+DB_ENGINE = os.environ.get("DB_ENGINE", "postgresql" if PRODUCTION else "sqlite")
+if DB_ENGINE == "sqlite":
+    DATABASES = {"default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": os.environ.get("DB_NAME") or BASE_DIR / "db.sqlite3",
+    }}
+elif DB_ENGINE == "postgresql":
+    DATABASES = {"default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": required("DB_NAME"),
+        "USER": required("DB_USER"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
+        "CONN_MAX_AGE": 60 if PRODUCTION else 0,
+        "CONN_HEALTH_CHECKS": True,
+        "OPTIONS": {
+            "sslmode": os.environ.get("DB_SSLMODE", "require" if PRODUCTION else "prefer"),
+            "connect_timeout": 5,
+            **({"sslrootcert": os.environ["DB_SSLROOTCERT"]} if os.environ.get("DB_SSLROOTCERT") else {}),
+        },
+    }}
+else:
+    raise ImproperlyConfigured("DB_ENGINE must be sqlite or postgresql.")
 
 
 # Password validation
@@ -103,9 +167,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'tr'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Istanbul'
 
 USE_I18N = True
 
@@ -116,6 +180,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]    
@@ -124,8 +189,67 @@ STATICFILES_DIRS = [
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+EMAIL_MODE = os.environ.get("EMAIL_MODE", "smtp" if PRODUCTION else "console")
+if EMAIL_MODE == "console" and not PRODUCTION:
+    MAILERS = {"default": {"BACKEND": "django.core.mail.backends.console.EmailBackend"}}
+elif EMAIL_MODE == "smtp":
+    SMTP_SECURITY = os.environ.get("SMTP_SECURITY", "starttls")
+    if SMTP_SECURITY not in {"starttls", "ssl"}:
+        raise ImproperlyConfigured("SMTP_SECURITY must be starttls or ssl.")
+    MAILERS = {"default": {
+        "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+        "OPTIONS": {
+            "host": required("SMTP_HOST"),
+            "port": int(os.environ.get("SMTP_PORT", "587")),
+            "username": os.environ.get("SMTP_USER", ""),
+            "password": os.environ.get("SMTP_PASSWORD", ""),
+            "use_tls": SMTP_SECURITY == "starttls",
+            "use_ssl": SMTP_SECURITY == "ssl",
+            "timeout": 10,
+        },
+    }}
+else:
+    raise ImproperlyConfigured("Use smtp in production or console for development.")
+
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "accounts:profile"
+LOGOUT_REDIRECT_URL = "books:list"
+LIBRARY_CLOSED_DATES = items("LIBRARY_CLOSED_DATES")
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "gemini")
+LLM_MODEL = os.environ.get("LLM_MODEL", "gemini-3.5-flash-lite")
+LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
+
+MEDIA_ROOT = Path(required("MEDIA_ROOT") if PRODUCTION else os.environ.get("MEDIA_ROOT", str(BASE_DIR / "media")))
+if PRODUCTION and (not MEDIA_ROOT.is_absolute() or MEDIA_ROOT.resolve().is_relative_to(BASE_DIR.resolve())):
+    raise ImproperlyConfigured("Production MEDIA_ROOT must be absolute and outside the release directory.")
+MEDIA_VOLUME_ID = required("MEDIA_VOLUME_ID") if PRODUCTION else os.environ.get("MEDIA_VOLUME_ID", "")
+if MEDIA_VOLUME_ID and (len(MEDIA_VOLUME_ID) > 64 or not all(c.isascii() and (c.isalnum() or c in "-_") for c in MEDIA_VOLUME_ID)):
+    raise ImproperlyConfigured("MEDIA_VOLUME_ID must be a short alphanumeric identifier.")
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+MEDIA_PROBE_ON_READINESS = boolean("MEDIA_PROBE_ON_READINESS", True)
+STATIC_ROOT = Path(os.environ.get("STATIC_ROOT", str(STATIC_ROOT)))
+if MEDIA_ROOT.resolve() == STATIC_ROOT.resolve() or MEDIA_ROOT.resolve().is_relative_to(STATIC_ROOT.resolve()) or STATIC_ROOT.resolve().is_relative_to(MEDIA_ROOT.resolve()):
+    raise ImproperlyConfigured("MEDIA_ROOT and STATIC_ROOT must be separate directories.")
+
+LOGGING = {
+    "version": 1, "disable_existing_loggers": False,
+    "formatters": {"safe": {"()": "library_system.observability.SafeJSONFormatter"}},
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "safe"}},
+    "root": {"handlers": ["console"], "level": "INFO"},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "WARNING", "propagate": False},
     },
 }
+PG_DUMP_PATH = os.environ.get("PG_DUMP_PATH", "pg_dump")
+FILE_UPLOAD_TEMP_DIR = os.environ.get("FILE_UPLOAD_TEMP_DIR") or None
+
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "webmaster@localhost")
+if PRODUCTION:
+    from django.core.validators import validate_email
+    from django.core.exceptions import ValidationError
+    try:
+        validate_email(required("DEFAULT_FROM_EMAIL"))
+    except ValidationError:
+        raise ImproperlyConfigured("Set a valid production DEFAULT_FROM_EMAIL.") from None
+PG_RESTORE_PATH = os.environ.get("PG_RESTORE_PATH", "pg_restore")

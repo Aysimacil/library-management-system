@@ -1,0 +1,10 @@
+<article class="book-card">
+    <a class="cover-link" href="{% url 'books:detail' book.pk %}{% querystring %}" tabindex="-1" aria-hidden="true">{% include "books/includes/cover.html" %}</a>
+    <div class="book-card-content">
+        <div class="tag-row">{% for category in book.categories.all|slice:":2" %}<span class="tag">{{ category.name }}</span>{% endfor %}</div>
+        <h2><a href="{% url 'books:detail' book.pk %}{% querystring %}">{{ book.title }}</a></h2>
+        <p class="muted">{{ book.authors.all|join:", "|default:"Yazar belirtilmemiş" }}</p>
+        {% if book.publication_year %}<p class="book-year">{{ book.publication_year }}</p>{% endif %}
+        <p class="stock {% if book.available %}in-stock{% else %}out-of-stock{% endif %}">{% if book.available %}<span aria-hidden="true">●</span> {{ book.available }} / {{ book.total }} kopya müsait{% elif book.total %}Tüm kopyalar ödünçte{% else %}Henüz fiziksel kopya yok{% endif %}</p>
+    </div>
+</article>

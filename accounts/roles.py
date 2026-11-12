@@ -1,0 +1,2 @@
+MEMBER = "Üye"
+LIBRARIAN = "Kütüphaneci"

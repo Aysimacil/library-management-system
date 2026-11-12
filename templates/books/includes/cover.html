@@ -1,0 +1,4 @@
+<div class="book-cover">
+    <div class="cover-fallback" aria-hidden="true"><span>{{ book.title|truncatechars:65 }}</span></div>
+    {% if book.cover %}<img src="{% url 'books:cover' book.pk %}?v={{ book.cover.name|urlencode }}" alt="{{ book.title }} kitabının kapağı" width="300" height="420" loading="lazy">{% endif %}
+</div>

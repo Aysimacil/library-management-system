@@ -1,0 +1,26 @@
+[Unit]
+Description=Library Django application
+After=network.target
+
+[Service]
+Type=simple
+User=library
+Group=www-data
+WorkingDirectory=/srv/library/current
+EnvironmentFile=/etc/library/environment
+RuntimeDirectory=library
+RuntimeDirectoryMode=0750
+UMask=0007
+ExecStartPre=/srv/library/current/.venv/bin/python manage.py check --deploy
+ExecStart=/srv/library/current/.venv/bin/gunicorn library_system.wsgi:application --config deploy/gunicorn.conf.py
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=40
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/library/media /srv/library/tmp /run/library
+
+[Install]
+WantedBy=multi-user.target

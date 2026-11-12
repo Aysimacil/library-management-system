@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{% if book %}Kitabı düzenle{% else %}Yeni Kitap Ekle{% endif %} · Kütüphane{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'books:manage' %}">← Katalog Yönetimi</a>
+<div class="page-heading"><div><p class="eyebrow">Koleksiyon kaydı</p><h1>{% if book %}Kitabı düzenle{% else %}Yeni Kitap Ekle{% endif %}</h1><p class="lead">Önce kitap bilgilerini kaydedin, ardından fiziksel kopyaları ekleyin.</p></div></div>
+<div class="management-layout"><form method="post" enctype="multipart/form-data" class="panel editor-form">{% csrf_token %}
+{{ form.non_field_errors }}
+{% for field in form %}<div class="editor-field {% if field.name == 'authors' or field.name == 'categories' %}choice-field{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<p class="helptext" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</p>{% endif %}{{ field.errors }}</div>{% endfor %}
+<div class="management-actions"><button>Kitabı kaydet</button><a href="{% if book %}{% url 'books:manage-detail' book.pk %}{% else %}{% url 'books:manage' %}{% endif %}">Vazgeç</a></div>
+</form><aside class="panel editor-help"><h2>Kayıt rehberi</h2><p>Birden fazla yazar ve kategori seçebilirsiniz. En az bir yazar gereklidir.</p><p>Eksik yazar veya kategoriyi formu doldurmadan önce oluşturun, sonra bu ekrana dönün.</p>
+{% if perms.books.add_author %}<p><a href="{% url 'books:manage-taxonomy-create' 'authors' %}">+ Yeni yazar oluştur</a></p>{% endif %}
+{% if perms.books.add_category %}<p><a href="{% url 'books:manage-taxonomy-create' 'categories' %}">+ Yeni kategori oluştur</a></p>{% endif %}
+<hr><h3>Güvenli kapak</h3><p class="muted">JPEG, PNG veya WebP · en fazla 4 MB ve 12 milyon piksel. Görsel güvenli JPEG'e dönüştürülür.</p><h3>Stok bilgisi</h3><p class="muted">Stok elle girilmez. Her fiziksel kitap için ayrı demirbaş kaydı ekleyin.</p></aside></div>
+{% endblock %}

@@ -1,0 +1,3 @@
+{% extends "base.html" %}{% block content %}<h1>Kitap teslimi</h1>
+<form method="post" class="stack" action="{% url 'circulation:issue' %}">{% csrf_token %}{{ form.as_p }}<button>Teslimi onayla</button></form>
+<a href="{% url 'circulation:desk' %}">Teslim masasına dön</a>{% endblock %}

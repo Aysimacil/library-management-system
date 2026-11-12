@@ -1,6 +1,7 @@
 
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
 
@@ -23,3 +24,5 @@ db.sqlite3-journal
 # İşletim sistemi kalıntıları
 .DS_Store
 Thumbs.db
+staticfiles/
+media/
