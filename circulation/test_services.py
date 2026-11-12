@@ -8,7 +8,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.admin.sites import site
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, close_old_connections, connection, connections, transaction
 from django.db.models.deletion import ProtectedError
 from django.test import TestCase, TransactionTestCase, override_settings
@@ -105,6 +105,30 @@ class LoanTests(TestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             BookCopy.objects.filter(pk=copy.pk).update(book=other)
         self.assertIn("book", site._registry[BookCopy].get_readonly_fields(None, copy))
+
+    def test_inactive_or_non_member_cannot_borrow(self):
+        inactive_member = member("pasif-okur")
+        inactive_member.is_active = False
+        inactive_member.save(update_fields=["is_active"])
+        with self.assertRaises(ValidationError):
+            borrow_book(member_id=inactive_member.pk, copy_id=self.copies[0].pk)
+
+        non_member = get_user_model().objects.create_user(username="rolsuz-kullanici")
+        with self.assertRaises(ValidationError):
+            borrow_book(member_id=non_member.pk, copy_id=self.copies[0].pk)
+
+    def test_unauthorized_user_cannot_pay_fine_and_returned_loan_cannot_renew(self):
+        loan = self.issue()
+        loan.due_date = timezone.localdate() - timedelta(days=3)
+        loan.save(update_fields=["due_date"])
+        return_book(loan_id=loan.pk)
+
+        with self.assertRaises(ValidationError):
+            renew_loan(loan_id=loan.pk)
+
+        fine = Fine.objects.get(loan=loan)
+        with self.assertRaises(PermissionDenied):
+            pay_fine(fine_id=fine.pk, actor=self.member)
 
 
 @skipUnless(connection.vendor == "postgresql", "Requires PostgreSQL row-level locks")
